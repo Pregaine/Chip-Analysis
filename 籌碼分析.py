@@ -176,7 +176,7 @@ grouped = df_sort.groupby( '券商', sort=False )
 
 df_sort = grouped.apply( foo )
 
-df_sort.to_csv( tar_str + '.csv', sep=',', line_terminator='\n' )
+# df_sort.to_csv( tar_str + '.csv', sep=',', line_terminator='\n' )
 
 df_writer = pd.ExcelWriter( tar_str + '.xlsx'  )
 
