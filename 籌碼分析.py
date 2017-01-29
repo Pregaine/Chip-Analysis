@@ -4,6 +4,7 @@ import os
 import re
 import glob
 import sys
+from datetime import datetime
 
 def foo( in_df ):
 
@@ -121,13 +122,6 @@ def Chip_AddDate( input_df, date ):
     return input_df
 
 df_sort = pd.DataFrame( )
-# InputPath   = 'D:\\03-workspace\\02-卷商分點\\搜集籌碼資料\\'
-# start_date  = '2017-01-13'
-# mid1_date   = '2017-01-15'
-# mid2_date   = '2017-01-18'
-# end_date    = '2017-01-19'
-# chip_str    = '1723中碳*.csv'
-# tar_str     = '1723中碳籌碼整理'
 
 InputPath        =  sys.argv[ 1 ]
 input_chip_str   =  sys.argv[ 2 ]
@@ -135,7 +129,13 @@ tar_str          =  sys.argv[ 3 ]
 end_date         =  sys.argv[ 4 ]
 start_date       =  sys.argv[ 5 ].split( ',' )
 
-print( start_date, end_date )
+# InputPath        = 'D:\\03-workspace\\02-卷商分點\\搜集籌碼資料\\'
+# input_chip_str   = '1101台泥'
+# start_date       = '2017-01-15'
+# end_date         = '2017-01-19'
+
+start_time_obj = datetime.strptime( start_date[ 0 ], '%Y-%m-%d' )
+end_time_obj   = datetime.strptime( end_date, '%Y-%m-%d' )
 
 chip_str    = input_chip_str + '*.csv'
 
@@ -143,8 +143,15 @@ for input_file in glob.glob( os.path.join( InputPath, chip_str ) ):
 
     re_obj = re.compile( r'[0-9]{8}' )
     YearPath = re_obj.search( input_file )
+    datetime_object = datetime.strptime( YearPath.group( 0 ), '%Y%m%d' )
 
+    # ---------------------------------------------------------------
+    # 判斷時間是否落在範圍內
+    # ---------------------------------------------------------------
+    if ( start_time_obj <= datetime_object <= end_time_obj ) is False:
+        continue
     print( 'Year', YearPath.group( 0 ) )
+    # ---------------------------------------------------------------
 
     # --------------------------------------------------------
     # 讀取CSV File至DataFrame
@@ -172,11 +179,7 @@ df_sort = df_sort[ df_sort[ '券商' ].notnull( ) ]
 
 grouped = df_sort.groupby( '券商', sort=False )
 
-# print( df_sort.columns.values )
-
 df_sort = grouped.apply( foo )
-
-# df_sort.to_csv( tar_str + '.csv', sep=',', line_terminator='\n' )
 
 df_writer = pd.ExcelWriter( tar_str + '.xlsx'  )
 
