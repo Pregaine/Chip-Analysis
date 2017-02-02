@@ -1,9 +1,10 @@
 @echo off
 
-echo ╗с╥╫╦Т╝| ╔ь╪п╦Т╝|
+echo Д╬├Ф╨░Х╥╞Е╬▒ Г⌡╝Ф╗≥Х╥╞Е╬▒
 
-C:\ENV_PY34\Scripts\python.exe D:\03-workspace\02-╗В╟с╓юбI\╦Э╓J╦Й╝ф.py "D:\\03-workspace\\02-╗В╟с╓юбI\\╥j╤╟дw╫X╦Й╝ф\\**\\" "D:\\03-workspace\\02-╗В╟с╓юбI\\дw╫X╦Й╝ф\\"
+C:\ENV_PY34\Scripts\python.exe D:\03-workspace\02-Е█╥Е∙├Е┬├И╩·\Х╪┴Е┘╔ХЁ┤Ф√≥.py "D:\\03-workspace\\02-Е█╥Е∙├Е┬├И╩·\\Ф░°И⌡├Г╠▄Г╒╪ХЁ┤Ф√≥\\**\\" "D:\\03-workspace\\02-Е█╥Е∙├Е┬├И╩·\\Г╠▄Г╒╪ХЁ┤Ф√≥\\"
 
-echo ╬Ц╡z╖╧╕╗
+echo Ф∙╢Г░├Е╝▄Ф┬░
+
 
 pause
