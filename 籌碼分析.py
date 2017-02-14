@@ -203,19 +203,25 @@ df_cal  = pd.DataFrame( )
 df_freq_buy = pd.Series( )
 df_freq_self = pd.Series( )
 
-# InputPath        =  sys.argv[ 1 ]
-# input_chip_str   =  sys.argv[ 2 ]
-# tar_str          =  sys.argv[ 3 ]
-# end_date         =  sys.argv[ 4 ]
-# cycle_chip         =  sys.argv[ 5 ]
+# InputPath        = 'D:\\03-workspace\\籌碼資料\\'
+# input_chip_str   = '1723中碳'
+# tar_str          = '1723中碳結果_170214'
+# end_date         = '20170208'
+# cycle_chip       = 10
+# CapitalStock     = 36920000000
 
-InputPath        = 'D:\\03-workspace\\籌碼資料\\'
-input_chip_str   = '1723中碳'
-tar_str          = '1723中碳結果_170214'
-end_date         = '20170208'
-cycle_chip       = 10
-CapitalStock     = 36920000000
-# CapitalStock     =
+InputPath        =  sys.argv[ 1 ]
+input_chip_str   =  sys.argv[ 2 ]
+tar_str          =  sys.argv[ 3 ]
+end_date         =  sys.argv[ 4 ]
+cycle_chip       =  sys.argv[ 5 ]
+CapitalStock     =  sys.argv[ 6 ]
+
+cycle_chip = int( cycle_chip )
+CapitalStock  = int( CapitalStock )
+
+print( cycle_chip, type( cycle_chip ) )
+print( CapitalStock, type( CapitalStock ) )
 
 Start, End, File = Cal_ChipDateList( InputPath, input_chip_str, end_date, cycle_chip )
 
