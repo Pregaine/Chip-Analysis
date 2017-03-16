@@ -17,7 +17,7 @@ def remove_duplicates( l ):
 #=======================================================================
 #獲取股號清單
 #=======================================================================
-filename = './/revenue_sii_201701.csv'
+filename = './/revenue_otc_201701.csv'
 revenu_pd  = pd.read_csv( filename, encoding = 'utf8' )
 stock_list = revenu_pd[ '公司代號' ].values.tolist( )
 stock_list = remove_duplicates(stock_list)
@@ -28,7 +28,7 @@ stock_list = remove_duplicates(stock_list)
 #=======================================================================
 #若資料夾無，則建立
 #=======================================================================
-Savefiledir = '.\\上市集保戶股權分散表\\'  
+Savefiledir = '.\\上櫃集保戶股權分散表\\'  
 
 if not os.path.isdir( Savefiledir ):
     os.makedirs( Savefiledir )
