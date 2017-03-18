@@ -98,6 +98,7 @@ def Chip_OneDay_Sort( input_df ):
     # --------------------------------------------------------
 
     input_df[ '買賣超' ] = input_df[ '買進股數' ] - input_df[ '賣出股數' ]
+    #print( "input_df[ '買賣超' ]", input_df[ '買賣超' ] )
     input_df[ '買進均價' ] = input_df[ '買進價格*股數' ] / input_df[ '買進股數' ]
     input_df[ '賣出均價' ] = input_df[ '賣出價格*股數' ] / input_df[ '賣出股數' ]
     # --------------------------------------------------------
@@ -139,51 +140,54 @@ def Chip_AddDate( input_df, date ):
 
     return input_df
 
-def Cal_ChipDateList( Path, chip_str, end_date_str, cycle ):
+def Cal_ChipDateList( Path, chip_str, start_date_str, cycle ):
 
     date_cycle = cycle
     start_date_list = [ ]
     end_date_list   = [ ]
     file_list       = [ ]
     date_cnt = 5
-    theday_obj = datetime.datetime.strptime( end_date_str, '%Y%m%d' )
+    theday_obj = datetime.datetime.strptime( start_date_str, '%Y%m%d' )
     # ----------------------------------------------------
 
-    FilePath = Path + '全台卷商交易資料_' + end_date_str + '\\' + chip_str + '_' + end_date_str + '.csv'
+    FilePath = Path + '全台卷商交易資料_' + start_date_str + '\\' + chip_str + '_' + start_date_str + '.csv'
 
     if os.path.exists( FilePath ):
         file_list.append( FilePath )
-        end_date_list.append( theday_obj )
+        start_date_list.append( theday_obj )
     else:
         print( chip_str + "結束日期無交易檔案")
         return
 
     while date_cycle > 0:
 
-        prevday_obj = theday_obj - datetime.timedelta( days = 1 )
-        prevday_str = prevday_obj.strftime( '_%Y%m%d' )
+        nexday_obj = theday_obj + datetime.timedelta( days = 1 )
+        nexday_str = nexday_obj.strftime( '_%Y%m%d' )
 
-        FilePath = Path + '全台卷商交易資料' + prevday_str + '\\' + chip_str + prevday_str + '.csv'
+        FilePath = Path + '全台卷商交易資料' + nexday_str + '\\' + chip_str + nexday_str + '.csv'
 
         if os.path.exists( FilePath ):
             date_cnt -= 1
 
             if date_cnt == 1:
-                start_date_list.append( prevday_obj )
+                end_date_list.append( nexday_obj )
 
             if date_cnt == 0:
                 date_cycle -= 1
                 date_cnt = 5
 
                 if date_cycle > 0:
-                    end_date_list.append( prevday_obj )
+                    start_date_list.append( nexday_obj )
 
             if date_cycle > 0:
                 file_list.append( FilePath )
 
-        theday_obj = prevday_obj
+        theday_obj = nexday_obj
+    
+    #print( "end_date_list", end_date_list )
+    #print( "start_date_list", start_date_list )
 
-    return start_date_list, end_date_list, file_list
+    return end_date_list, start_date_list, file_list
 
 def remove_whitespace(x):
     """
@@ -203,19 +207,19 @@ df_cal  = pd.DataFrame( )
 df_freq_buy = pd.Series( )
 df_freq_self = pd.Series( )
 
-# InputPath        = 'D:\\03-workspace\\籌碼資料\\'
-# input_chip_str   = '1723中碳'
-# tar_str          = '1723中碳結果_170214'
-# end_date         = '20170208'
-# cycle_chip       = 10
-# CapitalStock     = 36920000000
+InputPath        = "..\\籌碼資料\\"
+input_chip_str   = "1218泰山"
+tar_str          = "1218泰山籌碼整理"
+start_date       = "20161214"
+cycle_chip       = 3
+CapitalStock     = 3530000000
 
-InputPath        =  sys.argv[ 1 ]
-input_chip_str   =  sys.argv[ 2 ]
-tar_str          =  sys.argv[ 3 ]
-end_date         =  sys.argv[ 4 ]
-cycle_chip       =  sys.argv[ 5 ]
-CapitalStock     =  sys.argv[ 6 ]
+# InputPath        =  sys.argv[ 1 ]
+# input_chip_str   =  sys.argv[ 2 ]
+# tar_str          =  sys.argv[ 3 ]
+# start_date       =  sys.argv[ 4 ]
+# cycle_chip       =  sys.argv[ 5 ]
+# CapitalStock     =  sys.argv[ 6 ]
 
 cycle_chip = int( cycle_chip )
 CapitalStock  = int( CapitalStock )
@@ -223,7 +227,7 @@ CapitalStock  = int( CapitalStock )
 print( cycle_chip, type( cycle_chip ) )
 print( CapitalStock, type( CapitalStock ) )
 
-Start, End, File = Cal_ChipDateList( InputPath, input_chip_str, end_date, cycle_chip )
+Start, End, File = Cal_ChipDateList( InputPath, input_chip_str, start_date, cycle_chip )
 
 # print( 'Start List', Start )
 # print( 'End List', End )
@@ -284,6 +288,8 @@ for i in range( len( Start ) ):
     # ------------------------------------------------------------------------------
     # 取出含有字串買賣超金額及券商的columns為另一個Dataframe
     # ------------------------------------------------------------------------------
+    print( df_sort )
+
     df_buy20 = df_sort[  df_sort[ start_date + '~' + end_date + '買賣超金額' ] > 0 ].copy( )
     del df_buy20[ start_date + '~' + end_date + '賣出均價' ]
     df_buy20.sort_values( by = start_date + '~' + end_date + '買賣超金額', axis = 0, inplace = True, ascending = False )
@@ -319,6 +325,8 @@ for i in range( len( Start ) ):
     #計算前20大買超佔股本比
     #計算前20大賣超佔股本比
     #------------------------------------------------------------------------------
+    
+    print("df_buy20[ start_date + '~' + end_date + '買賣超' ]", df_buy20[ start_date + '~' + end_date + '買賣超' ].sum( ) )
 
     df_tmp = pd.DataFrame( { '日期範圍' : start_date + '~' + end_date,
                          '前20大買進均價' : df_buy20[ start_date + '~' + end_date + '買賣超金額' ].sum( ) / df_buy20[ start_date + '~' + end_date + '買賣超' ].sum( ),
