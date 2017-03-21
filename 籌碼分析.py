@@ -166,8 +166,8 @@ def Cal_ChipDateList( Path, chip_str, start_date_str, end_date_str, cycle ):
         start_date_list.append( i[ 0 ] )
         end_date_list.append( i[ - 1 ] )
 
-    start_date_list = start_date_list[::-1]
-    end_date_list = end_date_list[::-1]
+    start_date_list = start_date_list
+    end_date_list = end_date_list
 
     # print( "start_date_list", start_date_list )
     # print( "end_date_list", end_date_list )
@@ -322,8 +322,11 @@ for i in range( len( Start ) ):
     df_cal = pd.concat( [ df_cal, df_tmp ] )
 
     #-----------------------------------------------------------------------------
-df_cal[ '累積前20大買超佔股本比' ] = df_cal[ '前20大買超佔股本比' ].cumsum( )[::-1]
-df_cal[ '累積前20大賣超佔股本比' ] = df_cal[ '前20大賣超佔股本比' ].cumsum( )[::-1]
+df_cal[ '累積前20大買超佔股本比' ] = df_cal[ '前20大買超佔股本比' ].cumsum( )
+df_cal[ '累積前20大賣超佔股本比' ] = df_cal[ '前20大賣超佔股本比' ].cumsum( )
+
+#整組DataFrame根據index翻轉排序
+df_cal = df_cal.iloc[::-1]
 
 #df_cal[ '累積前20大買超佔股本比' ] -= df_cal.loc[ -1, '累積前20大買超佔股本比' ]
 #df_cal[ '累積前20大賣超佔股本比' ] -= df_cal.loc[ -1, '累積前20大賣超佔股本比' ]
