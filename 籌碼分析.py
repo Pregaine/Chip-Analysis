@@ -454,7 +454,7 @@ df_sort.to_excel( df_writer, sheet_name = '籌碼分析' )
 # df_cal[ '當日收盤價' ] =
 
 cols = [ '日期範圍', '前20大買超佔股本比', '前20大賣超佔股本比',
-         '前20大買進均價', '前20大賣出均價', '卷商總買賣家數', '卷商買家數','卷商賣家數' ]
+         '前20大買進均價', '前20大賣出均價', '卷商總買賣家數', '卷商買家數', '卷商賣家數' ]
 
 df_cal = df_cal.reindex( columns = cols )
 
@@ -463,21 +463,23 @@ df_cal = df_cal.reindex( columns = cols )
 # ------------------------------------------------
 ret = GetClosePrice( input_chip_str, global_start_date )
 
-C = np.array( ret[ 'Close' ], dtype=float, ndmin=1 )
-H = np.array( ret[ 'High' ],  dtype=float, ndmin=1 )
-L = np.array( ret[ 'Low' ],   dtype=float, ndmin=1 )
-V = np.array( ret[ 'Volume' ],dtype=float, ndmin=1 )
+df_cal = pd.merge( df_cal, ret, how = 'inner', on = '日期範圍' )
 
-ret['MA03']   = talib.SMA( C, 3 )
-ret['MA05']   = talib.SMA( C, 5 )
-ret['MA10']   = talib.SMA( C, 10 )
-ret['MA20']   = talib.SMA( C, 20 )
-ret['MA30']   = talib.SMA( C, 30 )
-ret['MA45']   = talib.SMA( C, 45 )
-ret['MA60']   = talib.SMA( C, 60 )
-ret['MA120']  = talib.SMA( C, 120 )
+C = np.array( df_cal[ 'Close' ], dtype=float, ndmin=1 )
+H = np.array( df_cal[ 'High' ],  dtype=float, ndmin=1 )
+L = np.array( df_cal[ 'Low' ],   dtype=float, ndmin=1 )
+V = np.array( df_cal[ 'Volume' ],dtype=float, ndmin=1 )
 
-ret['RSI 12'] = talib.RSI( C, timeperiod=12 )
+df_cal['MA03']   = talib.SMA( C, 3 )
+df_cal['MA05']   = talib.SMA( C, 5 )
+df_cal['MA10']   = talib.SMA( C, 10 )
+df_cal['MA20']   = talib.SMA( C, 20 )
+df_cal['MA30']   = talib.SMA( C, 30 )
+df_cal['MA45']   = talib.SMA( C, 45 )
+df_cal['MA60']   = talib.SMA( C, 60 )
+df_cal['MA120']  = talib.SMA( C, 120 )
+
+df_cal['RSI 12'] = talib.RSI( C, timeperiod=12 )
 
 # ------ MACD Begin. ----------------------------
 # 使用MACD需要设置长短均线和macd平均线的参数
@@ -486,44 +488,41 @@ LONGPERIOD   = 26
 SMOOTHPERIOD = 9
 # 用Talib计算MACD取值，得到三个时间序列数组，分别为macd,signal 和 hist
 DIF = ( H + L +  2 * C  ) / 4
-ret['MACD DIF'], ret['DEM'], ret['OSC'] = talib.MACD( DIF, SHORTPERIOD, LONGPERIOD, SMOOTHPERIOD )
+df_cal['MACD DIF'], df_cal['DEM'], df_cal['OSC'] = talib.MACD( DIF, SHORTPERIOD, LONGPERIOD, SMOOTHPERIOD )
 # ------ MACD End. ------------------------------
 
 # -------- MFI Begin. ---------------------------
-ret[ 'MFI(6)' ] = talib.MFI( H, L, C, V, timeperiod = 6 )
-ret[ 'MFI(14)' ] = talib.MFI( H, L, C, V, timeperiod = 14 )
+df_cal[ 'MFI(6)' ]  = talib.MFI( H, L, C, V, timeperiod = 6 )
+df_cal[ 'MFI(14)' ] = talib.MFI( H, L, C, V, timeperiod = 14 )
 # -------- MFI End. -----------------------------
 
 # -------- Williams %R Begin. ------------------------
-ret[ 'WILLR 9' ]  = talib.WILLR( H, L, C, timeperiod=9 )
-ret[ 'WILLR 18' ] = talib.WILLR( H, L, C, timeperiod=18 )
-ret[ 'WILLR 56' ] = talib.WILLR( H, L, C, timeperiod=56 )
+df_cal[ 'WILLR 9' ]  = talib.WILLR( H, L, C, timeperiod=9 )
+df_cal[ 'WILLR 18' ] = talib.WILLR( H, L, C, timeperiod=18 )
+df_cal[ 'WILLR 56' ] = talib.WILLR( H, L, C, timeperiod=56 )
 # -------- Williams %R End. --------------------------
 
 # -------- Average Directional Movement Index Begin . --------
-ret[ 'PLUS_DI']  = talib.PLUS_DI( H, L, C, timeperiod = 14 )
-ret[ 'MINUS_DI'] = talib.MINUS_DI( H, L, C, timeperiod = 14 )
-ret[ 'DX']       = talib.DX( H, L, C, timeperiod = 14 )
-ret[ 'ADX']      = talib.ADX( H, L, C, timeperiod = 14 )
+df_cal[ 'PLUS_DI']  = talib.PLUS_DI( H, L, C, timeperiod = 14 )
+df_cal[ 'MINUS_DI'] = talib.MINUS_DI( H, L, C, timeperiod = 14 )
+df_cal[ 'DX']       = talib.DX( H, L, C, timeperiod = 14 )
+df_cal[ 'ADX']      = talib.ADX( H, L, C, timeperiod = 14 )
 # ------- Average Directional Movement Index End . --------
 
 # -------- Bollinger Bands Begin. --------
-#布林 是 OK，但倒過來
-ret[ 'Upperband' ], ret[ 'Middleband' ], ret[ 'Dnperband' ] = talib.BBANDS( C, timeperiod=20, nbdevup=2, nbdevdn=2, matype=0 )
-ret['%BB'] = ( C - ret[ 'Dnperband' ] ) / ( ret[ 'Upperband' ] - ret[ 'Dnperband' ] )
-ret['W20'] = ( ret[ 'Upperband' ] - ret[ 'Dnperband' ] ) / ret[ 'MA20' ]
+# 布林 是 OK，但倒過來
+df_cal[ 'Upperband' ], df_cal[ 'Middleband' ], df_cal[ 'Dnperband' ] = talib.BBANDS( C, timeperiod=20, nbdevup=2, nbdevdn=2, matype=0 )
+df_cal['%BB'] = ( C - df_cal[ 'Dnperband' ] ) / ( df_cal[ 'Upperband' ] - df_cal[ 'Dnperband' ] )
+df_cal['W20'] = ( df_cal[ 'Upperband' ] - df_cal[ 'Dnperband' ] ) / df_cal[ 'MA20' ]
 # -------- Bollinger Bands Begin. --------
 
 # ---------------- 乖離 指標 Begin. ------------------------
 # 乖離 OK, 但比較是倒過來
 # 20 Bias=(C-SMA20)/SMA20
 # 60 Bias=(C-SMA60)/SMA60
-ret[ '20 Bias' ] = ( C - ret['MA20'] ) / ret['MA20']
-ret[ '60 Bias' ] = ( C - ret['MA60'] ) / ret['MA60']
+df_cal[ '20 Bias' ] = ( C - df_cal['MA20'] ) / df_cal['MA20']
+df_cal[ '60 Bias' ] = ( C - df_cal['MA60'] ) / df_cal['MA60']
 # ---------------- 乖離 指標 End. ------------------------
-print( ret )
-
-df_cal = pd.merge( df_cal, ret, how = 'inner', on = '日期範圍' )
 
 df_cal.to_excel( df_writer, sheet_name = '買賣超金額20大' )
 
