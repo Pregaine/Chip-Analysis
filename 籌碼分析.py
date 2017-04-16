@@ -106,7 +106,7 @@ def foo( in_df ):
             in_df[ start_date + '買進均價' ] = df[ '買進價格*股數' ].sum( ) / df[ '買進股數' ].sum( )
 
         if  df[ '賣出股數' ].sum( ) is 0:
-            in_df[start_date + '賣出均價'] = 0
+            in_df[ start_date + '賣出均價'] = 0
         else:
             # -------------------------------------------------------
             # 近幾日賣出均價
@@ -123,8 +123,12 @@ def foo( in_df ):
         # -------------------------------------------------------
         in_df[ start_date + '買賣超金額' ] = df[ '買進價格*股數' ].sum( ) - df[ '賣出價格*股數' ].sum( )
 
-    del in_df[ '買進股數' ]
-    del in_df[ '賣出股數' ]
+        in_df[ start_date + '買進股數'] = df[ '買進股數' ].sum( )
+
+        in_df[ start_date + '賣出股數' ] = df[ '賣出股數' ].sum( )
+
+    # del in_df[ '買進股數' ]
+    # del in_df[ '賣出股數' ]
     del in_df[ '買進價格*股數' ]
     del in_df[ '賣出價格*股數' ]
     del in_df[ '買賣超' ]
@@ -350,15 +354,11 @@ for i in range( len( Start ) ):
     # 取出含有字串買賣超金額及券商的columns為另一個Dataframe
     # ------------------------------------------------------------------------------
 
-    df_buy20 = df_sort[  df_sort[ start_date + '買賣超金額' ] > 0 ].copy( )
+    df_buy20 = df_sort[  df_sort[ start_date + '買進均價' ] > 0 ].copy( )
 
-    chip_buy_count = df_buy20[ start_date + '買賣超' ].count()
-
-    del df_buy20[ start_date + '賣出均價' ]
+    chip_buy_count = df_buy20[ start_date + '買進均價' ].count()
 
     df_buy20.sort_values( by = start_date + '買賣超金額', axis = 0, inplace = True, ascending = False )
-
-    df_buy20 = df_buy20[ :20 ]
 
     # print( '買超金額 > 0 ')
     # print( df_buy20 )
@@ -368,14 +368,20 @@ for i in range( len( Start ) ):
     # 取出含有字串買賣超金額及券商的columns為另一個Dataframe
     # ------------------------------------------------------------------------------
 
-    df_self20 = df_sort[  df_sort[ start_date + '買賣超金額' ] < 0 ].copy( )
+    df_self20 = df_sort[  df_sort[ start_date + '賣出均價' ] > 0 ].copy( )
 
-    chip_self_count = df_self20[start_date + '買賣超'].count()
-
-    del df_self20[ start_date + '買進均價' ]
+    chip_self_count = df_self20[ start_date + '賣出均價' ].count()
 
     df_self20.sort_values( by = start_date + '買賣超金額', axis = 0, inplace = True, ascending = True )
 
+    tmp = df_sort.loc[ ( df_sort[ start_date + '買進股數' ] > 0 ) | ( df_sort[ start_date + '賣出股數' ] > 0 ),
+                       [ start_date + '買進股數',  start_date + '賣出股數' ] ]
+
+    # print( tmp.shape[ 0 ] ) #輸出Row數量
+    # print( tmp.shape[ 1 ] ) #輸出Column數量
+    # print( tmp )
+
+    df_buy20  = df_buy20[:20]
     df_self20 = df_self20[ :20 ]
 
     # print( '賣超金額 > 0 ')
@@ -413,7 +419,7 @@ for i in range( len( Start ) ):
 
         '卷商賣家數' : chip_self_count,
 
-        '卷商總買賣家數' : chip_buy_count + chip_self_count
+        '卷商總買賣家數' : tmp.shape[ 0 ]
 
         }, index=[ 0 ] )
 
