@@ -381,8 +381,8 @@ for i in range( len( Start ) ):
     # print( tmp.shape[ 1 ] ) #輸出Column數量
     # print( tmp )
 
-    df_buy20  = df_buy20[:20]
-    df_self20 = df_self20[ :20 ]
+    df_buy20  = df_buy20[ :15 ]
+    df_self20 = df_self20[ :15 ]
 
     # print( '賣超金額 > 0 ')
     # print( df_self20 )
@@ -457,9 +457,9 @@ df_sort.to_excel( df_writer, sheet_name = '籌碼分析' )
 # 前20大賣出均價
 #-------------------------------------------------
 
-# df_cal[ '當日收盤價' ] =
+df_cal[ '股本' ] = CapitalStock;
 
-cols = [ '日期範圍', '前20大買超佔股本比', '前20大賣超佔股本比',
+cols = [ '股本', '日期範圍', '前20大買超佔股本比', '前20大賣超佔股本比',
          '前20大買進均價', '前20大賣出均價', '卷商總買賣家數', '卷商買家數', '卷商賣家數' ]
 
 df_cal = df_cal.reindex( columns = cols )
