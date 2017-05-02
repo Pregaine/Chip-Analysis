@@ -338,7 +338,7 @@ grouped = df_sort.groupby( '券商', sort=False )
 df_sort = grouped.apply( foo )
 # ------------------------------------------------------------------------------
 
-# 取出日期範圍內買賣超金額前20大，保留買賣超金額，卷商，買進均價
+# 取出日期範圍內買賣超金額前15大，保留買賣超金額，卷商，買進均價
 # 日期範圍從Start, End時間物件得到
 # 產生dataframe表格數量從Start, End時間物件得出
 #--------------------------------------------------------------------------------
@@ -354,25 +354,25 @@ for i in range( len( Start ) ):
     # 取出含有字串買賣超金額及券商的columns為另一個Dataframe
     # ------------------------------------------------------------------------------
 
-    df_buy20 = df_sort[  df_sort[ start_date + '買進均價' ] > 0 ].copy( )
+    df_buy15 = df_sort[  df_sort[ start_date + '買進均價' ] > 0 ].copy( )
 
-    chip_buy_count = df_buy20[ start_date + '買進均價' ].count()
+    chip_buy_count = df_buy15[ start_date + '買進均價' ].count()
 
-    df_buy20.sort_values( by = start_date + '買賣超金額', axis = 0, inplace = True, ascending = False )
+    df_buy15.sort_values( by = start_date + '買賣超金額', axis = 0, inplace = True, ascending = False )
 
     # print( '買超金額 > 0 ')
-    # print( df_buy20 )
+    # print( df_buy15 )
     #-------------------------------------------------------------------------------
 
     # ------------------------------------------------------------------------------
     # 取出含有字串買賣超金額及券商的columns為另一個Dataframe
     # ------------------------------------------------------------------------------
 
-    df_self20 = df_sort[  df_sort[ start_date + '賣出均價' ] > 0 ].copy( )
+    df_self15 = df_sort[  df_sort[ start_date + '賣出均價' ] > 0 ].copy( )
 
-    chip_self_count = df_self20[ start_date + '賣出均價' ].count()
+    chip_self_count = df_self15[ start_date + '賣出均價' ].count()
 
-    df_self20.sort_values( by = start_date + '買賣超金額', axis = 0, inplace = True, ascending = True )
+    df_self15.sort_values( by = start_date + '買賣超金額', axis = 0, inplace = True, ascending = True )
 
     tmp = df_sort.loc[ ( df_sort[ start_date + '買進股數' ] > 0 ) | ( df_sort[ start_date + '賣出股數' ] > 0 ),
                        [ start_date + '買進股數',  start_date + '賣出股數' ] ]
@@ -381,39 +381,39 @@ for i in range( len( Start ) ):
     # print( tmp.shape[ 1 ] ) #輸出Column數量
     # print( tmp )
 
-    df_buy20  = df_buy20[ :15 ]
-    df_self20 = df_self20[ :15 ]
+    df_buy15  = df_buy15[ :15 ]
+    df_self15 = df_self15[ :15 ]
 
     # print( '賣超金額 > 0 ')
-    # print( df_self20 )
+    # print( df_self15 )
     #-------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------
-    # 計算前20大買進券商出現次數
-    # 計算前20大賣出券商出現次數
+    # 計算前15大買進券商出現次數
+    # 計算前15大賣出券商出現次數
     # ------------------------------------------------------------------------------
-    df_freq_buy = df_freq_buy.append( df_buy20[ '券商' ] )
-    df_freq_self = df_freq_self.append( df_self20[ '券商' ] )
+    df_freq_buy = df_freq_buy.append( df_buy15[ '券商' ] )
+    df_freq_self = df_freq_self.append( df_self15[ '券商' ] )
     # ----------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------
-    #計算前20大買進均價
-    #計算前20大賣出均價
-    #計算前20大買超佔股本比
-    #計算前20大賣超佔股本比
+    #計算前15大買進均價
+    #計算前15大賣出均價
+    #計算前15大買超佔股本比
+    #計算前15大賣超佔股本比
     #------------------------------------------------------------------------------
 
     df_tmp = pd.DataFrame(
 
         { '日期範圍' : start_date,
 
-        '前20大買進均價' : df_buy20[ start_date + '買賣超金額' ].sum( ) / df_buy20[ start_date + '買賣超' ].sum( ),
+        '前15大買進均價' : df_buy15[ start_date + '買賣超金額' ].sum( ) / df_buy15[ start_date + '買賣超' ].sum( ),
 
-        '前20大買超佔股本比' : df_buy20[ start_date + '買賣超金額' ].sum( ) / CapitalStock * 100,
+        '前15大買超佔股本比' : df_buy15[ start_date + '買賣超金額' ].sum( ) / CapitalStock * 100,
 
-        '前20大賣出均價': df_self20[ start_date + '買賣超金額' ].sum( ) / df_self20[ start_date + '買賣超' ].sum( ),
+        '前15大賣出均價': df_self15[ start_date + '買賣超金額' ].sum( ) / df_self15[ start_date + '買賣超' ].sum( ),
 
-        '前20大賣超佔股本比' : df_self20[ start_date + '買賣超金額' ].sum( ) / CapitalStock * 100,
+        '前15大賣超佔股本比' : df_self15[ start_date + '買賣超金額' ].sum( ) / CapitalStock * 100,
 
         '卷商買家數' : chip_buy_count,
 
@@ -429,38 +429,38 @@ for i in range( len( Start ) ):
 
     #-----------------------------------------------------------------------------
 
-# df_cal[ '累積前20大買超佔股本比' ] = df_cal[ '前20大買超佔股本比' ].cumsum( )
-# df_cal[ '累積前20大賣超佔股本比' ] = df_cal[ '前20大賣超佔股本比' ].cumsum( )
+# df_cal[ '累積前15大買超佔股本比' ] = df_cal[ '前15大買超佔股本比' ].cumsum( )
+# df_cal[ '累積前15大賣超佔股本比' ] = df_cal[ '前15大賣超佔股本比' ].cumsum( )
 #整組DataFrame根據index翻轉排序
 
 df_cal = df_cal.iloc[ ::-1 ]
 
-#df_cal[ '累積前20大買超佔股本比' ] -= df_cal.loc[ -1, '累積前20大買超佔股本比' ]
-#df_cal[ '累積前20大賣超佔股本比' ] -= df_cal.loc[ -1, '累積前20大賣超佔股本比' ]
+#df_cal[ '累積前15大買超佔股本比' ] -= df_cal.loc[ -1, '累積前15大買超佔股本比' ]
+#df_cal[ '累積前15大賣超佔股本比' ] -= df_cal.loc[ -1, '累積前15大賣超佔股本比' ]
 #---------------------------------------------------------------------------------
 
-df_freq_buy  = df_freq_buy.value_counts( )[ :20 ]
-df_freq_self = df_freq_self.value_counts( )[ :20 ]
+df_freq_buy  = df_freq_buy.value_counts( )[ :15 ]
+df_freq_self = df_freq_self.value_counts( )[ :15 ]
 
 print( df_freq_buy )
 print( df_freq_self )
 
-df_writer = pd.ExcelWriter( tar_str + '.xlsx'  )
+df_writer = pd.ExcelWriter( tar_str + '.xls'  )
 df_sort.to_excel( df_writer, sheet_name = '籌碼分析' )
 #---------------------------------------------------
 
 # 排序寫入欄位
 # 日期範圍
-# 前20大買超佔股本比
-# 前20大賣超佔股本比
-# 前20大買進均價
-# 前20大賣出均價
+# 前15大買超佔股本比
+# 前15大賣超佔股本比
+# 前15大買進均價
+# 前15大賣出均價
 #-------------------------------------------------
 
 df_cal[ '股本' ] = CapitalStock;
 
-cols = [ '股本', '日期範圍', '前20大買超佔股本比', '前20大賣超佔股本比',
-         '前20大買進均價', '前20大賣出均價', '卷商總買賣家數', '卷商買家數', '卷商賣家數' ]
+cols = [ '股本', '日期範圍', '前15大買超佔股本比', '前15大賣超佔股本比',
+         '前15大買進均價', '前15大賣出均價', '卷商總買賣家數', '卷商買家數', '卷商賣家數' ]
 
 df_cal = df_cal.reindex( columns = cols )
 
@@ -479,7 +479,7 @@ V = np.array( df_cal[ 'Volume' ],dtype=float, ndmin=1 )
 df_cal['MA03']   = talib.SMA( C, 3 )
 df_cal['MA05']   = talib.SMA( C, 5 )
 df_cal['MA10']   = talib.SMA( C, 10 )
-df_cal['MA20']   = talib.SMA( C, 20 )
+df_cal['MA20']   = talib.SMA( C, 15 )
 df_cal['MA30']   = talib.SMA( C, 30 )
 df_cal['MA45']   = talib.SMA( C, 45 )
 df_cal['MA60']   = talib.SMA( C, 60 )
@@ -530,7 +530,7 @@ df_cal[ '20 Bias' ] = ( C - df_cal['MA20'] ) / df_cal['MA20']
 df_cal[ '60 Bias' ] = ( C - df_cal['MA60'] ) / df_cal['MA60']
 # ---------------- 乖離 指標 End. ------------------------
 
-df_cal.to_excel( df_writer, sheet_name = '買賣超金額20大' )
+df_cal.to_excel( df_writer, sheet_name = '買賣超金額15大' )
 
 tmp_1 = df_freq_buy.to_frame( )
 
@@ -562,13 +562,13 @@ print( '完成' )
 # df[ 'BIAD' ]
 #------------------------------------------------------------
 
-# df[ '單日前20大買超# 金額' ]
-# df[ '單日前20大買超張數' ]
-# df[ '單日前20大買進均價' ]
-# df[ '單日前20大買超金額佔股本比' ]
+# df[ '單日前15大買超# 金額' ]
+# df[ '單日前15大買超張數' ]
+# df[ '單日前15大買進均價' ]
+# df[ '單日前15大買超金額佔股本比' ]
 #------------------------------------------------------------
 
-# df[ '單日前20大賣超金額' ]
-# df[ '單日前20大賣超張數' ]
+# df[ '單日前15大賣超金額' ]
+# df[ '單日前15大賣超張數' ]
 
 
