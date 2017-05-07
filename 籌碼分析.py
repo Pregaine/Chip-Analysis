@@ -10,6 +10,8 @@ import numpy as np
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup as BS
+import sqlite3
+import os.path
 
 # Todo
 # format 日期格式
@@ -82,65 +84,6 @@ def GetClosePrice( input_chip_str, start_date ):
     ret_df = pd.DataFrame( columns )
 
     return ret_df
-
-def foo( in_df ):
-
-    for i in range( len( Start ) ):
-
-        # start_date  = start_date_obj.strftime( '%Y%m%d' )
-        # end_date    = end_date_obj.strftime( '%Y%m%d' )
-
-        start_date  = Start[ i ].strftime( '%Y%m%d' )
-        end_date    = End[ i ].strftime( '%Y%m%d' )
-
-        mask = ( in_df[ '日期' ] >= start_date ) & ( in_df[ '日期'] <= end_date )
-
-        df = in_df.loc[ mask ]
-
-        if df[ '買進股數' ].sum( ) is 0:
-            in_df[start_date + '買進均價'] = 0
-        else:
-            # -------------------------------------------------------
-            # 近幾日買進均價
-            # -------------------------------------------------------
-            in_df[ start_date + '買進均價' ] = df[ '買進價格*股數' ].sum( ) / df[ '買進股數' ].sum( )
-
-        if  df[ '賣出股數' ].sum( ) is 0:
-            in_df[ start_date + '賣出均價'] = 0
-        else:
-            # -------------------------------------------------------
-            # 近幾日賣出均價
-            # -------------------------------------------------------
-            in_df[ start_date + '賣出均價' ] = df[ '賣出價格*股數' ].sum( ) / df[ '賣出股數' ].sum( )
-
-        # -------------------------------------------------------
-        # 近幾日買賣超
-        # -------------------------------------------------------
-        in_df[ start_date + '買賣超' ] = df[ '買賣超' ].sum( )
-        # -------------------------------------------------------
-
-        # 近幾日買賣超金額
-        # -------------------------------------------------------
-        in_df[ start_date + '買賣超金額' ] = df[ '買進價格*股數' ].sum( ) - df[ '賣出價格*股數' ].sum( )
-
-        in_df[ start_date + '買進股數'] = df[ '買進股數' ].sum( )
-
-        in_df[ start_date + '賣出股數' ] = df[ '賣出股數' ].sum( )
-
-    # del in_df[ '買進股數' ]
-    # del in_df[ '賣出股數' ]
-    del in_df[ '買進價格*股數' ]
-    del in_df[ '賣出價格*股數' ]
-    del in_df[ '買賣超' ]
-    del in_df[ '買進均價' ]
-    del in_df[ '賣出均價' ]
-    del in_df[ '日期' ]
-
-    in_df[ '券商' ] = in_df[ '券商' ].apply( remove_whitespace )
-    in_df.drop_duplicates( subset='券商', inplace='True' )
-
-    return in_df
-
 
 def Chip_OneDay_Sort( input_df ):
 
@@ -263,15 +206,16 @@ def remove_whitespace(x):
 
 df_sort      = pd.DataFrame( )
 df_cal       = pd.DataFrame( )
+df_compare   = pd.DataFrame( )
 df_freq_buy  = pd.Series( )
 df_freq_self = pd.Series( )
 
 # InputPath        = "..\\籌碼資料\\"
-# input_chip_str   = "1218泰山"
-# tar_str          = "1218泰山籌碼整理"
-# start_date       = "20161214"
-# end_date         = "20161230"
-# cycle_chip       = 3
+# input_chip_str   = "1723中碳"
+# tar_str          = "1723中碳籌碼整理"
+# start_date       = "20170407"
+# end_date         = "20170414"
+# cycle_chip       = 1
 # CapitalStock     = 3530000000
 
 InputPath        =  sys.argv[ 1 ]
@@ -303,6 +247,27 @@ Start, End, File = Cal_ChipDateList( InputPath, input_chip_str, start_date, end_
 
 # chip_str    = input_chip_str + '*.csv'
 
+# if os.path.isfile( tar_str + '.sqlite' ):
+#
+#     with sqlite3.connect( tar_str + '.sqlite' ) as db:
+#
+#         df_compare = pd.read_sql_query( 'select * from df', con = db )
+#         # 讀出 df_comapre 日期範圍
+#         print( df_compare[ '日期範圍' ] )
+#         print( Start )
+#
+#         for val in df_compare[ '日期範圍' ]:
+#
+#             date_obj = datetime.datetime.strptime( val, '%Y%m%d' )
+#
+#             if date_obj in Start:
+#                 Start.remove( date_obj )
+#
+#         print( 'Start', Start )
+#
+# if len( Start ) == 0:
+#     print( 'exit' )
+#     exit()
 
 for input_file in File:
 
@@ -333,9 +298,9 @@ df_sort[ '日期' ] = pd.to_datetime( df_sort[ '日期' ], format='%Y%m%d' )
 
 df_sort = df_sort[ df_sort[ '券商' ].notnull( ) ]
 
-grouped = df_sort.groupby( '券商', sort=False )
+grouped = df_sort.groupby( [ '券商', '日期' ] )
 
-df_sort = grouped.apply( foo )
+df_sort = grouped.sum( ).reset_index( )
 # ------------------------------------------------------------------------------
 
 # 取出日期範圍內買賣超金額前15大，保留買賣超金額，卷商，買進均價
@@ -354,32 +319,28 @@ for i in range( len( Start ) ):
     # 取出含有字串買賣超金額及券商的columns為另一個Dataframe
     # ------------------------------------------------------------------------------
 
-    df_buy15 = df_sort[  df_sort[ start_date + '買進均價' ] > 0 ].copy( )
+    df_buy15 = df_sort[ ( df_sort[ '買進均價' ] > 0 ) & ( df_sort[ '日期' ] == Start[ i ] ) ]
 
-    chip_buy_count = df_buy15[ start_date + '買進均價' ].count()
+    chip_buy_count = df_buy15[ '買進均價' ].count( )
 
-    df_buy15.sort_values( by = start_date + '買賣超金額', axis = 0, inplace = True, ascending = False )
+    df_buy15.loc[ : , '買賣超金額' ] = df_buy15[ '買進價格*股數' ] - df_buy15[ '賣出價格*股數' ]
 
-    # print( '買超金額 > 0 ')
-    # print( df_buy15 )
+    df_buy15.sort_values( by = '買賣超金額', axis = 0, inplace = True, ascending = False )
     #-------------------------------------------------------------------------------
 
     # ------------------------------------------------------------------------------
     # 取出含有字串買賣超金額及券商的columns為另一個Dataframe
     # ------------------------------------------------------------------------------
 
-    df_self15 = df_sort[  df_sort[ start_date + '賣出均價' ] > 0 ].copy( )
+    df_self15 = df_sort[ ( df_sort[ '賣出均價' ] > 0 ) & ( df_sort[ '日期' ] == Start[ i ] ) ].copy( )
 
-    chip_self_count = df_self15[ start_date + '賣出均價' ].count()
+    chip_self_count = df_self15[ '賣出均價' ].count( )
 
-    df_self15.sort_values( by = start_date + '買賣超金額', axis = 0, inplace = True, ascending = True )
+    df_self15.loc[ : ,'買賣超金額' ] = df_self15['買進價格*股數'] - df_self15['賣出價格*股數']
 
-    tmp = df_sort.loc[ ( df_sort[ start_date + '買進股數' ] > 0 ) | ( df_sort[ start_date + '賣出股數' ] > 0 ),
-                       [ start_date + '買進股數',  start_date + '賣出股數' ] ]
+    df_self15.sort_values( by = '買賣超金額', axis = 0, inplace = True, ascending = True )
 
-    # print( tmp.shape[ 0 ] ) #輸出Row數量
-    # print( tmp.shape[ 1 ] ) #輸出Column數量
-    # print( tmp )
+    tmp = df_sort[ ( ( df_sort[ '買進股數' ] > 0 ) | ( df_sort[ '賣出股數' ] > 0 ) ) & ( df_sort[ '日期' ] == Start[ i ] ) ]
 
     df_buy15  = df_buy15[ :15 ]
     df_self15 = df_self15[ :15 ]
@@ -407,13 +368,13 @@ for i in range( len( Start ) ):
 
         { '日期範圍' : start_date,
 
-        '前15大買進均價' : df_buy15[ start_date + '買賣超金額' ].sum( ) / df_buy15[ start_date + '買賣超' ].sum( ),
+        '前15大買進均價' : df_buy15[ '買賣超金額' ].sum( ) / df_buy15[ '買賣超' ].sum( ),
 
-        '前15大買超佔股本比' : df_buy15[ start_date + '買賣超金額' ].sum( ) / CapitalStock * 100,
+        '前15大買超佔股本比' : df_buy15[ '買賣超金額' ].sum( ) / CapitalStock * 100,
 
-        '前15大賣出均價': df_self15[ start_date + '買賣超金額' ].sum( ) / df_self15[ start_date + '買賣超' ].sum( ),
+        '前15大賣出均價': df_self15[ '買賣超金額' ].sum( ) / df_self15[ '買賣超' ].sum( ),
 
-        '前15大賣超佔股本比' : df_self15[ start_date + '買賣超金額' ].sum( ) / CapitalStock * 100,
+        '前15大賣超佔股本比' : df_self15[ '買賣超金額' ].sum( ) / CapitalStock * 100,
 
         '卷商買家數' : chip_buy_count,
 
@@ -423,7 +384,7 @@ for i in range( len( Start ) ):
 
         }, index=[ 0 ] )
 
-    print( " 型態 {} ".format( type( df_sort[ start_date + '買賣超金額' ] ) ) )
+    # print( " 型態 {} ".format( type( df_sort[ '買賣超金額' ] ) ) )
 
     df_cal = pd.concat( [ df_cal, df_tmp ] )
 
@@ -484,7 +445,6 @@ df_cal['MA30']   = talib.SMA( C, 30 )
 df_cal['MA45']   = talib.SMA( C, 45 )
 df_cal['MA60']   = talib.SMA( C, 60 )
 df_cal['MA120']  = talib.SMA( C, 120 )
-
 df_cal['RSI 12'] = talib.RSI( C, timeperiod=12 )
 
 # ------ MACD Begin. ----------------------------
@@ -531,6 +491,21 @@ df_cal[ '60 Bias' ] = ( C - df_cal['MA60'] ) / df_cal['MA60']
 # ---------------- 乖離 指標 End. ------------------------
 
 df_cal.to_excel( df_writer, sheet_name = '買賣超金額15大' )
+
+df_compare.to_excel( df_writer, sheet_name = '比較' )
+
+with sqlite3.connect( tar_str + '.sqlite' ) as db:
+    df_cal.to_sql( 'df', con = db, if_exists = 'replace' )
+
+
+print( df_cal.info( ) )
+print( "----------------------------" )
+print( df_compare.info( ) )
+
+# if df_compare.equals( df_cal ):
+#     print( "compare true" )
+# else:
+#     print( "compare fail" )
 
 tmp_1 = df_freq_buy.to_frame( )
 
