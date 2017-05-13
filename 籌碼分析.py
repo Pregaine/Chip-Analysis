@@ -98,27 +98,18 @@ def Chip_OneDay_Sort( input_df ):
     #新增欄位-買進價格*股數
     #新增欄位-賣出價格*股數
     #--------------------------------------------------------
-
-    input_df[ '買進價格*股數' ] = input_df[ '買進股數' ] * input_df[ '價格' ]
-    input_df[ '賣出價格*股數' ] = input_df[ '賣出股數' ] * input_df[ '價格' ]
+    input_df.loc[ :, '買進價格*股數' ] = input_df[ '買進股數' ] * input_df[ '價格' ]
+    input_df.loc[ :, '賣出價格*股數' ] = input_df[ '賣出股數' ] * input_df[ '價格' ]
     #--------------------------------------------------------
-
-    # --------------------------------------------------------
-    # 依據券商群組分類
-    # --------------------------------------------------------
-    # input_df = input_df.groupby( '券商' ).sum( )
-    # --------------------------------------------------------
 
     # --------------------------------------------------------
     # 新增欄位-買賣超
     # 新增欄位-買進均價
     # 新增欄位-賣出均價
     # --------------------------------------------------------
-
-    input_df[ '買賣超' ] = input_df[ '買進股數' ] - input_df[ '賣出股數' ]
-    #print( "input_df[ '買賣超' ]", input_df[ '買賣超' ] )
-    input_df[ '買進均價' ] = input_df[ '買進價格*股數' ] / input_df[ '買進股數' ]
-    input_df[ '賣出均價' ] = input_df[ '賣出價格*股數' ] / input_df[ '賣出股數' ]
+    input_df.loc[ :, '買賣超' ] = input_df[ '買進股數' ] - input_df[ '賣出股數' ]
+    input_df.loc[ :, '買進均價' ] = input_df[ '買進價格*股數' ] / input_df[ '買進股數' ]
+    input_df.loc[ :, '賣出均價' ] = input_df[ '賣出價格*股數' ] / input_df[ '賣出股數' ]
     # --------------------------------------------------------
 
     # -------------------------------------------------------
@@ -133,24 +124,6 @@ def Chip_OneDay_Sort( input_df ):
 
 
 def Chip_AddDate( input_df, date ):
-
-    # --------------------------------------------------------
-    # Function Name : Chip_OneDay_Sort
-    # Description   : 刪除欄位-序號，新增欄位-日期
-    # Input         : data frame, str
-    # Output        : data frame
-    # --------------------------------------------------------
-
-    # -------------------------------------------------------
-    # 刪除序號欄位，axis = 1 代表x軸
-    # 刪除價格欄位，axis = 1 代表x軸
-    # -------------------------------------------------------
-
-    # del input_df[ '價格' ]
-    # del input_df[ '序號' ]
-    # input_df.drop( '序號', axis=1, level=None, inplace=True )
-    # input_df.drop( '價格', axis=1, level=None, inplace=True )
-    # -------------------------------------------------------
 
     # --------------------------------------------------------
     # 新增欄位-日期
@@ -191,8 +164,6 @@ def Cal_ChipDateList( Path, chip_str, start_date_str, end_date_str, cycle ):
     start_date_list = start_date_list
     end_date_list = end_date_list
 
-    # print( "start_date_list", start_date_list )
-    # print( "end_date_list", end_date_list )
     return start_date_list, end_date_list, file_list
 
 
@@ -279,7 +250,6 @@ for input_file in File:
     # quotechar 代表包住字串符號
     # delimiter 代表分隔符號
     # --------------------------------------------------------
-
     filename_str = input_file
     print( filename_str )
     df = pd.read_csv( filename_str, sep  = ',', encoding  = 'cp950', false_values = 'NA', names = [ '序號', '券商', '價格', '買進股數', '賣出股數' ] )
@@ -288,19 +258,20 @@ for input_file in File:
     df      = Chip_AddDate( df, YearPath.group( 0 ) )
     df_sort = pd.concat( [ df_sort, df ] )
 
+df_sort = df_sort[ df_sort[ '券商' ].notnull( ) ]
+
 df_sort = Chip_OneDay_Sort( df_sort )
-
-grouped = df_sort.groupby( [ '券商', '日期'], sort=False )
-
-df_sort.sort_values( [ '券商', '日期' ], inplace=True )
 
 df_sort[ '日期' ] = pd.to_datetime( df_sort[ '日期' ], format='%Y%m%d' )
 
-df_sort = df_sort[ df_sort[ '券商' ].notnull( ) ]
+# df_sort.set_index( [ '券商', '日期' ], inplace=True )
 
-grouped = df_sort.groupby( [ '券商', '日期' ] )
+# df_sort.reset_index( inplace=True )
 
-df_sort = grouped.sum( ).reset_index( )
+df_sort.groupby( [ '券商', '日期' ] ).sum().reset_index( 0, drop=True, inplace = True )
+
+df_sort[ '買進均價' ] = df_sort[ '買進價格*股數' ] / df_sort['買進股數']
+df_sort[ '賣出均價' ] = df_sort[ '賣出價格*股數' ] / df_sort['賣出股數']
 # ------------------------------------------------------------------------------
 
 # 取出日期範圍內買賣超金額前15大，保留買賣超金額，卷商，買進均價
@@ -311,21 +282,22 @@ df_sort = grouped.sum( ).reset_index( )
 for i in range( len( Start ) ):
 
     start_date  = Start[ i ].strftime( '%Y%m%d' )
-    end_date    = End[ i ].strftime( '%Y%m%d' )
-
-    df_sort.reset_index( 0, drop=True, inplace = True )
     # ------------------------------------------------------------------------------
 
     # 取出含有字串買賣超金額及券商的columns為另一個Dataframe
     # ------------------------------------------------------------------------------
 
-    df_buy15 = df_sort[ ( df_sort[ '買進均價' ] > 0 ) & ( df_sort[ '日期' ] == Start[ i ] ) ]
+    df_buy15 = df_sort[ ( df_sort[ '買進均價' ] > 0 ) & ( df_sort[ '日期' ] == Start[ i ] ) ].copy( )
 
-    chip_buy_count = df_buy15[ '買進均價' ].count( )
+    chip_buy_count = df_buy15.drop_duplicates(subset=['券商', '日期'], keep='first')['券商'].count()
 
-    df_buy15.loc[ : , '買賣超金額' ] = df_buy15[ '買進價格*股數' ] - df_buy15[ '賣出價格*股數' ]
+    print( '買家數量',Start[ i ], chip_buy_count )
 
-    df_buy15.sort_values( by = '買賣超金額', axis = 0, inplace = True, ascending = False )
+    df_buy15['買賣超金額'] = df_buy15['買進價格*股數'] - df_buy15['賣出價格*股數']
+
+    df_buy15.sort_values(by='買賣超金額', axis=0, ascending=False, inplace = True )
+
+    df_buy15 = df_buy15[ :15 ]
     #-------------------------------------------------------------------------------
 
     # ------------------------------------------------------------------------------
@@ -334,20 +306,23 @@ for i in range( len( Start ) ):
 
     df_self15 = df_sort[ ( df_sort[ '賣出均價' ] > 0 ) & ( df_sort[ '日期' ] == Start[ i ] ) ].copy( )
 
-    chip_self_count = df_self15[ '賣出均價' ].count( )
+    chip_self_count = df_self15.drop_duplicates(subset=['券商', '日期'], keep='first')['券商'].count()
 
-    df_self15.loc[ : ,'買賣超金額' ] = df_self15['買進價格*股數'] - df_self15['賣出價格*股數']
+    print('賣家數量', Start[i], chip_buy_count)
 
-    df_self15.sort_values( by = '買賣超金額', axis = 0, inplace = True, ascending = True )
+    df_self15[ '買賣超金額'] = df_self15['買進價格*股數'] - df_self15['賣出價格*股數']
 
-    tmp = df_sort[ ( ( df_sort[ '買進股數' ] > 0 ) | ( df_sort[ '賣出股數' ] > 0 ) ) & ( df_sort[ '日期' ] == Start[ i ] ) ]
+    df_self15 = df_self15.sort_values( by='買賣超金額', axis=0, ascending=True )
 
-    df_buy15  = df_buy15[ :15 ]
     df_self15 = df_self15[ :15 ]
+    # ------------------------------------------------------------------------------
 
-    # print( '賣超金額 > 0 ')
-    # print( df_self15 )
-    #-------------------------------------------------------------------------------
+    list_all_chip = df_sort[ ( (df_sort['買進均價'] > 0) | (df_sort['賣出均價'] > 0) ) & (df_sort['日期'] == Start[i] ) ][ '券商' ]
+
+    print( 'list_all_chip', list_all_chip )
+
+    list_all_chip_count = len( set( list_all_chip ) )
+    # -----------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------
     # 計算前15大買進券商出現次數
@@ -376,35 +351,26 @@ for i in range( len( Start ) ):
 
         '前15大賣超佔股本比' : df_self15[ '買賣超金額' ].sum( ) / CapitalStock * 100,
 
-        '卷商買家數' : chip_buy_count,
+        '前15大買賣超張數' : df_buy15[ '買賣超' ].sum( ) - df_self15[ '買賣超' ].sum( ),
 
-        '卷商賣家數' : chip_self_count,
+        '當日總卷商買家數' : chip_buy_count,
 
-        '卷商總買賣家數' : tmp.shape[ 0 ]
+        '當日總卷商賣家數' : chip_self_count,
+
+        '當日總卷商買賣家數' : list_all_chip_count
 
         }, index=[ 0 ] )
 
-    # print( " 型態 {} ".format( type( df_sort[ '買賣超金額' ] ) ) )
-
     df_cal = pd.concat( [ df_cal, df_tmp ] )
-
     #-----------------------------------------------------------------------------
 
-# df_cal[ '累積前15大買超佔股本比' ] = df_cal[ '前15大買超佔股本比' ].cumsum( )
-# df_cal[ '累積前15大賣超佔股本比' ] = df_cal[ '前15大賣超佔股本比' ].cumsum( )
 #整組DataFrame根據index翻轉排序
 
 df_cal = df_cal.iloc[ ::-1 ]
-
-#df_cal[ '累積前15大買超佔股本比' ] -= df_cal.loc[ -1, '累積前15大買超佔股本比' ]
-#df_cal[ '累積前15大賣超佔股本比' ] -= df_cal.loc[ -1, '累積前15大賣超佔股本比' ]
 #---------------------------------------------------------------------------------
 
 df_freq_buy  = df_freq_buy.value_counts( )[ :15 ]
 df_freq_self = df_freq_self.value_counts( )[ :15 ]
-
-print( df_freq_buy )
-print( df_freq_self )
 
 df_writer = pd.ExcelWriter( tar_str + '.xls'  )
 df_sort.to_excel( df_writer, sheet_name = '籌碼分析' )
@@ -418,10 +384,10 @@ df_sort.to_excel( df_writer, sheet_name = '籌碼分析' )
 # 前15大賣出均價
 #-------------------------------------------------
 
-df_cal[ '股本' ] = CapitalStock;
+df_cal.loc[ :, '股本' ] = CapitalStock;
 
-cols = [ '股本', '日期範圍', '前15大買超佔股本比', '前15大賣超佔股本比',
-         '前15大買進均價', '前15大賣出均價', '卷商總買賣家數', '卷商買家數', '卷商賣家數' ]
+cols = [ '股本', '日期範圍', '前15大買超佔股本比', '前15大賣超佔股本比', '前15大買賣超張數',
+         '前15大買進均價', '前15大賣出均價', '當日總卷商買賣家數', '當日總卷商買家數', '當日總卷商賣家數' ]
 
 df_cal = df_cal.reindex( columns = cols )
 
@@ -430,22 +396,22 @@ df_cal = df_cal.reindex( columns = cols )
 # ------------------------------------------------
 ret = GetClosePrice( input_chip_str, global_start_date )
 
-df_cal = pd.merge( df_cal, ret, how = 'inner', on = '日期範圍' )
+# df_cal = pd.merge( df_cal, ret, how = 'inner', on = '日期範圍' )
 
-C = np.array( df_cal[ 'Close' ], dtype=float, ndmin=1 )
-H = np.array( df_cal[ 'High' ],  dtype=float, ndmin=1 )
-L = np.array( df_cal[ 'Low' ],   dtype=float, ndmin=1 )
-V = np.array( df_cal[ 'Volume' ],dtype=float, ndmin=1 )
+C = np.array( ret[ 'Close' ], dtype=float, ndmin=1 )
+H = np.array( ret[ 'High' ],  dtype=float, ndmin=1 )
+L = np.array( ret[ 'Low' ],   dtype=float, ndmin=1 )
+V = np.array( ret[ 'Volume' ],dtype=float, ndmin=1 )
 
-df_cal['MA03']   = talib.SMA( C, 3 )
-df_cal['MA05']   = talib.SMA( C, 5 )
-df_cal['MA10']   = talib.SMA( C, 10 )
-df_cal['MA20']   = talib.SMA( C, 15 )
-df_cal['MA30']   = talib.SMA( C, 30 )
-df_cal['MA45']   = talib.SMA( C, 45 )
-df_cal['MA60']   = talib.SMA( C, 60 )
-df_cal['MA120']  = talib.SMA( C, 120 )
-df_cal['RSI 12'] = talib.RSI( C, timeperiod=12 )
+ret['MA03']   = talib.SMA( C, 3 )
+ret['MA05']   = talib.SMA( C, 5 )
+ret['MA10']   = talib.SMA( C, 10 )
+ret['MA20']   = talib.SMA( C, 15 )
+ret['MA30']   = talib.SMA( C, 30 )
+ret['MA45']   = talib.SMA( C, 45 )
+ret['MA60']   = talib.SMA( C, 60 )
+ret['MA120']  = talib.SMA( C, 120 )
+ret['RSI 12'] = talib.RSI( C, timeperiod=12 )
 
 # ------ MACD Begin. ----------------------------
 # 使用MACD需要设置长短均线和macd平均线的参数
@@ -454,53 +420,54 @@ LONGPERIOD   = 26
 SMOOTHPERIOD = 9
 # 用Talib计算MACD取值，得到三个时间序列数组，分别为macd,signal 和 hist
 DIF = ( H + L +  2 * C  ) / 4
-df_cal['MACD DIF'], df_cal['DEM'], df_cal['OSC'] = talib.MACD( DIF, SHORTPERIOD, LONGPERIOD, SMOOTHPERIOD )
+ret['MACD DIF'], ret['DEM'], ret['OSC'] = talib.MACD( DIF, SHORTPERIOD, LONGPERIOD, SMOOTHPERIOD )
 # ------ MACD End. ------------------------------
 
 # -------- MFI Begin. ---------------------------
-df_cal[ 'MFI(6)' ]  = talib.MFI( H, L, C, V, timeperiod = 6 )
-df_cal[ 'MFI(14)' ] = talib.MFI( H, L, C, V, timeperiod = 14 )
+ret[ 'MFI(6)' ]  = talib.MFI( H, L, C, V, timeperiod = 6 )
+ret[ 'MFI(14)' ] = talib.MFI( H, L, C, V, timeperiod = 14 )
 # -------- MFI End. -----------------------------
 
 # -------- Williams %R Begin. ------------------------
-df_cal[ 'WILLR 9' ]  = talib.WILLR( H, L, C, timeperiod=9 )
-df_cal[ 'WILLR 18' ] = talib.WILLR( H, L, C, timeperiod=18 )
-df_cal[ 'WILLR 56' ] = talib.WILLR( H, L, C, timeperiod=56 )
+ret[ 'WILLR 9' ]  = talib.WILLR( H, L, C, timeperiod=9 )
+ret[ 'WILLR 18' ] = talib.WILLR( H, L, C, timeperiod=18 )
+ret[ 'WILLR 56' ] = talib.WILLR( H, L, C, timeperiod=56 )
 # -------- Williams %R End. --------------------------
 
 # -------- Average Directional Movement Index Begin . --------
-df_cal[ 'PLUS_DI']  = talib.PLUS_DI( H, L, C, timeperiod = 14 )
-df_cal[ 'MINUS_DI'] = talib.MINUS_DI( H, L, C, timeperiod = 14 )
-df_cal[ 'DX']       = talib.DX( H, L, C, timeperiod = 14 )
-df_cal[ 'ADX']      = talib.ADX( H, L, C, timeperiod = 14 )
+ret[ 'PLUS_DI']  = talib.PLUS_DI( H, L, C, timeperiod = 14 )
+ret[ 'MINUS_DI'] = talib.MINUS_DI( H, L, C, timeperiod = 14 )
+ret[ 'DX']       = talib.DX( H, L, C, timeperiod = 14 )
+ret[ 'ADX']      = talib.ADX( H, L, C, timeperiod = 14 )
 # ------- Average Directional Movement Index End . --------
 
 # -------- Bollinger Bands Begin. --------
 # 布林 是 OK，但倒過來
-df_cal[ 'Upperband' ], df_cal[ 'Middleband' ], df_cal[ 'Dnperband' ] = talib.BBANDS( C, timeperiod=20, nbdevup=2, nbdevdn=2, matype=0 )
-df_cal['%BB'] = ( C - df_cal[ 'Dnperband' ] ) / ( df_cal[ 'Upperband' ] - df_cal[ 'Dnperband' ] )
-df_cal['W20'] = ( df_cal[ 'Upperband' ] - df_cal[ 'Dnperband' ] ) / df_cal[ 'MA20' ]
+ret[ 'Upperband' ], ret[ 'Middleband' ], ret[ 'Dnperband' ] = talib.BBANDS( C, timeperiod=20, nbdevup=2, nbdevdn=2, matype=0 )
+ret['%BB'] = ( C - ret[ 'Dnperband' ] ) / ( ret[ 'Upperband' ] - ret[ 'Dnperband' ] )
+ret['W20'] = ( ret[ 'Upperband' ] - ret[ 'Dnperband' ] ) / ret[ 'MA20' ]
 # -------- Bollinger Bands Begin. --------
 
 # ---------------- 乖離 指標 Begin. ------------------------
 # 乖離 OK, 但比較是倒過來
 # 20 Bias=(C-SMA20)/SMA20
 # 60 Bias=(C-SMA60)/SMA60
-df_cal[ '20 Bias' ] = ( C - df_cal['MA20'] ) / df_cal['MA20']
-df_cal[ '60 Bias' ] = ( C - df_cal['MA60'] ) / df_cal['MA60']
+ret[ '20 Bias' ] = ( C - ret['MA20'] ) / ret['MA20']
+ret[ '60 Bias' ] = ( C - ret['MA60'] ) / ret['MA60']
 # ---------------- 乖離 指標 End. ------------------------
 
 df_cal.to_excel( df_writer, sheet_name = '買賣超金額15大' )
 
-df_compare.to_excel( df_writer, sheet_name = '比較' )
+ret.to_excel( df_writer, sheet_name='技術指標分析' )
 
-with sqlite3.connect( tar_str + '.sqlite' ) as db:
-    df_cal.to_sql( 'df', con = db, if_exists = 'replace' )
+# df_compare.to_excel( df_writer, sheet_name = '比較' )
 
+# with sqlite3.connect( tar_str + '.sqlite' ) as db:
+#     df_cal.to_sql( 'df', con = db, if_exists = 'replace' )
 
-print( df_cal.info( ) )
-print( "----------------------------" )
-print( df_compare.info( ) )
+# print( df_cal.info( ) )
+# print( "----------------------------" )
+# print( df_compare.info( ) )
 
 # if df_compare.equals( df_cal ):
 #     print( "compare true" )
@@ -520,30 +487,4 @@ result = pd.concat( [ tmp_1, tmp_2 ], axis=1 )
 result.to_excel( df_writer, sheet_name = '買賣超券商' )
 
 df_writer.save( )
-
-print( '完成' )
-
-# df[ '當日交易卷商數' ]
-# df[ '當日交易卷商買家數' ]
-# df[ '當日交易卷商賣家數' ]
-# df[ 'MA' ]
-# df[ 'KD' ]
-# df[ 'RSI' ]
-# df[ 'MACD' ]
-# df[ 'W%R' ]
-# df[ 'BB Band' ]
-# df[ 'DMI' ]
-# df[ 'MFI' ]
-# df[ 'BIAD' ]
-#------------------------------------------------------------
-
-# df[ '單日前15大買超# 金額' ]
-# df[ '單日前15大買超張數' ]
-# df[ '單日前15大買進均價' ]
-# df[ '單日前15大買超金額佔股本比' ]
-#------------------------------------------------------------
-
-# df[ '單日前15大賣超金額' ]
-# df[ '單日前15大賣超張數' ]
-
 

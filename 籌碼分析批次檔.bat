@@ -8,6 +8,15 @@ REM 開始日期
 REM 結束日期
 REM 間隔時間
 
+REM C:\ENV_PY34\Scripts\python.exe .\籌碼分析.py^
+REM "..\\籌碼資料\\"^
+REM "2330台積電"^
+REM "2330台積電籌碼整理"^
+REM "20170509"^
+REM "20170510"^
+REM 1^
+REM 3530000000^
+ 
 C:\ENV_PY34\Scripts\python.exe .\籌碼分析.py^
  "..\\籌碼資料\\"^
  "1723中碳"^
