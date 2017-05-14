@@ -5,12 +5,9 @@ import os
 import os.path
 import re
 import sys
-
-import numpy as np
+import query_stock_price.query_stock_price_國票證券 as qsp
 import pandas as pd
-import requests
-import talib
-from bs4 import BeautifulSoup as BS
+
 
 # Todo
 # format 日期格式
@@ -45,70 +42,6 @@ CapitalStock = int( CapitalStock )
 global_start_date = start_date
 
 print( "股本", CapitalStock )
-
-def GetClosePrice( input_chip_str, start_date ):
-    date = [ ]
-    close = [ ]
-    high = [ ]
-    low = [ ]
-    volume = [ ]
-    index = 0
-
-    day_obj = datetime.datetime.strptime( start_date, '%Y%m%d' )
-    day_str = day_obj.strftime( '%Y/%m/%d' )
-
-    input_chip_str = input_chip_str.strip( )
-
-    match = re.match( r"([0-9]+)(.*)", input_chip_str, re.I )
-    if match:
-        input_chip_str = match.groups( )
-
-    print( "字串 {} ".format( input_chip_str[ 0 ] ) )
-    print( "字串 {} ".format( day_str ) )
-
-    website = 'http://www.cnyes.com/twstock/ps_historyprice.aspx?code=' + input_chip_str[
-        0 ] + '&ctl00$ContentPlaceHolder1$startText=' + day_str
-
-    print( "字串 {} ".format( website ) )
-
-    headers = { 'User-Agent': 'Mozilla/5.0' }
-    rs = requests.session( )
-    res = rs.get( website, stream = True, verify = False, headers = headers )
-    soup = BS( res.text, "html.parser" )
-
-    for row in soup.find_all( 'td' )[ 3:-4 ]:
-
-        if index is 0:
-            date.append( row.text.replace( "/", "" ) )
-        elif index is 4:
-            price = row.text.replace( ",", "" )
-            price = float( price )
-            close.append( price )
-        elif index is 2:
-            price = row.text.replace( ",", "" )
-            price = float( price )
-            high.append( price )
-        elif index is 3:
-            price = row.text.replace( ",", "" )
-            price = float( price )
-            low.append( price )
-        elif index is 7:
-            price = row.text.replace( ",", "" )
-            price = float( price )
-            volume.append( price )
-
-        if index is 9:
-            index = 0
-        else:
-            index = index + 1
-
-    # Create a variable of the value of the columns
-    columns = { '日期範圍': date, 'Close': close, 'High': high, 'Low': low, 'Volume': volume }
-
-    # Create a dataframe from the columns variable
-    ret_df = pd.DataFrame( columns )
-
-    return ret_df
 
 def Cal_ChipDateList( Path, chip_str, start_date_str, end_date_str, cycle ):
     start_date_list = [ ]
@@ -344,70 +277,37 @@ df_cal = df_cal.reindex( columns = cols )
 # ------------------------------------------------
 # 取得收盤價
 # ------------------------------------------------
-ret = GetClosePrice( input_chip_str, global_start_date )
-
-C = np.array( ret[ 'Close' ], dtype = float, ndmin = 1 )
-H = np.array( ret[ 'High' ], dtype = float, ndmin = 1 )
-L = np.array( ret[ 'Low' ], dtype = float, ndmin = 1 )
-V = np.array( ret[ 'Volume' ], dtype = float, ndmin = 1 )
-
-ret[ 'MA03' ] = talib.SMA( C, 3 )
-ret[ 'MA05' ] = talib.SMA( C, 5 )
-ret[ 'MA10' ] = talib.SMA( C, 10 )
-ret[ 'MA20' ] = talib.SMA( C, 15 )
-ret[ 'MA30' ] = talib.SMA( C, 30 )
-ret[ 'MA45' ] = talib.SMA( C, 45 )
-ret[ 'MA60' ] = talib.SMA( C, 60 )
-ret[ 'MA120' ] = talib.SMA( C, 120 )
-ret[ 'RSI 12' ] = talib.RSI( C, timeperiod = 12 )
-
-# ------ MACD Begin. ----------------------------
-# 使用MACD需要设置长短均线和macd平均线的参数
-SHORTPERIOD = 12
-LONGPERIOD = 26
-SMOOTHPERIOD = 9
-# 用Talib计算MACD取值，得到三个时间序列数组，分别为macd,signal 和 hist
-DIF = (H + L + 2 * C) / 4
-ret[ 'MACD DIF' ], ret[ 'DEM' ], ret[ 'OSC' ] = talib.MACD( DIF, SHORTPERIOD, LONGPERIOD, SMOOTHPERIOD )
-# ------ MACD End. ------------------------------
-
-# -------- MFI Begin. ---------------------------
-ret[ 'MFI(6)' ] = talib.MFI( H, L, C, V, timeperiod = 6 )
-ret[ 'MFI(14)' ] = talib.MFI( H, L, C, V, timeperiod = 14 )
-# -------- MFI End. -----------------------------
-
-# -------- Williams %R Begin. ------------------------
-ret[ 'WILLR 9' ] = talib.WILLR( H, L, C, timeperiod = 9 )
-ret[ 'WILLR 18' ] = talib.WILLR( H, L, C, timeperiod = 18 )
-ret[ 'WILLR 56' ] = talib.WILLR( H, L, C, timeperiod = 56 )
-# -------- Williams %R End. --------------------------
-
-# -------- Average Directional Movement Index Begin . --------
-ret[ 'PLUS_DI' ] = talib.PLUS_DI( H, L, C, timeperiod = 14 )
-ret[ 'MINUS_DI' ] = talib.MINUS_DI( H, L, C, timeperiod = 14 )
-ret[ 'DX' ] = talib.DX( H, L, C, timeperiod = 14 )
-ret[ 'ADX' ] = talib.ADX( H, L, C, timeperiod = 14 )
-# ------- Average Directional Movement Index End . --------
-
-# -------- Bollinger Bands Begin. --------
-# 布林 是 OK，但倒過來
-ret[ 'Upperband' ], ret[ 'Middleband' ], ret[ 'Dnperband' ] = talib.BBANDS( C, timeperiod = 20, nbdevup = 2,
-                                                                            nbdevdn = 2, matype = 0 )
-ret[ '%BB' ] = (C - ret[ 'Dnperband' ]) / (ret[ 'Upperband' ] - ret[ 'Dnperband' ])
-ret[ 'W20' ] = (ret[ 'Upperband' ] - ret[ 'Dnperband' ]) / ret[ 'MA20' ]
-# -------- Bollinger Bands Begin. --------
-
-# ---------------- 乖離 指標 Begin. ------------------------
-# 乖離 OK, 但比較是倒過來
-# 20 Bias=(C-SMA20)/SMA20
-# 60 Bias=(C-SMA60)/SMA60
-ret[ '20 Bias' ] = (C - ret[ 'MA20' ]) / ret[ 'MA20' ]
-ret[ '60 Bias' ] = (C - ret[ 'MA60' ]) / ret[ 'MA60' ]
-# ---------------- 乖離 指標 End. ------------------------
 
 df_cal.to_excel( df_writer, sheet_name = '買賣超金額15大' )
+# ---------------------------------------------------------------
 
-ret.to_excel( df_writer, sheet_name = '技術指標分析' )
+ti_a = qsp.Technical_Indicator( input_chip_str[ :4 ], 'A', 360 )
+
+ti_a.get_technical_indicator_dataframe( )
+
+ti_a.df.to_excel( df_writer, sheet_name = '技術指標_日線' )
+# ---------------------------------------------------------------
+
+ti_w = qsp.Technical_Indicator( input_chip_str[ :4 ], 'W', 72 )
+
+ti_w.get_technical_indicator_dataframe( )
+
+ti_w.df.to_excel( df_writer, sheet_name = '技術指標_周線' )
+# ---------------------------------------------------------------
+
+ti_m = qsp.Technical_Indicator( input_chip_str[ :4 ], 'M', 12 )
+
+ti_m.get_technical_indicator_dataframe( )
+
+ti_m.df.to_excel( df_writer, sheet_name = '技術指標_月線' )
+# ---------------------------------------------------------------
+
+# ti_60min = qsp.Technical_Indicator( input_chip_str[ :4 ], '60', 1000 )
+#
+# ti_60min.get_technical_indicator_dataframe( )
+#
+# ti_60min.df.to_excel( df_writer, sheet_name = '技術指標_60分線' )
+# ---------------------------------------------------------------
 
 # df_compare.to_excel( df_writer, sheet_name = '比較' )
 
