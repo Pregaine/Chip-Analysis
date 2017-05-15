@@ -4,7 +4,6 @@ import pandas as pd
 import talib
 
 class Technical_Indicator:
-
     """ 輸入線型周期, 查詢股價
         D 日線
         W 週線
@@ -16,7 +15,7 @@ class Technical_Indicator:
         60 60分鐘
         """
 
-    def __init__( self, number = '2330', query_value = 'A', days = 5  ):
+    def __init__( self, number = '2330', query_value = 'A', days = 5 ):
 
         self.number = number
         self.query_value = query_value
@@ -74,7 +73,7 @@ class Technical_Indicator:
             elif j == 6:
                 self.df[ '成交量' ] = [ float( i ) for i in lst ]
 
-    def get_technical_indicator_dataframe(self):
+    def get_technical_indicator_dataframe( self ):
 
         C = np.array( self.df[ '收盤' ], dtype = float, ndmin = 1 )
         H = np.array( self.df[ '最高' ], dtype = float, ndmin = 1 )
@@ -85,17 +84,21 @@ class Technical_Indicator:
 
         self.df[ 'MA05' ] = talib.SMA( C, 5 )
 
+        self.df[ 'MA08' ] = talib.SMA( C, 8 )
+
         self.df[ 'MA10' ] = talib.SMA( C, 10 )
 
-        self.df[ 'MA20' ] = talib.SMA( C, 15 )
-
-        self.df[ 'MA30' ] = talib.SMA( C, 30 )
-
-        self.df[ 'MA45' ] = talib.SMA( C, 45 )
+        self.df[ 'MA20' ] = talib.SMA( C, 20 )
 
         self.df[ 'MA60' ] = talib.SMA( C, 60 )
 
         self.df[ 'MA120' ] = talib.SMA( C, 120 )
+
+        self.df[ 'MA240' ] = talib.SMA( C, 240 )
+
+        self.df[ 'MA480' ] = talib.SMA( C, 480 )
+
+        self.df[ 'MA720' ] = talib.SMA( C, 720 )
 
         self.df[ 'RSI 12' ] = talib.RSI( C, timeperiod = 12 )
 
@@ -106,7 +109,8 @@ class Technical_Indicator:
         SMOOTHPERIOD = 9
         # 用Talib计算MACD取值，得到三个时间序列数组，分别为macd,signal 和 hist
         DIF = (H + L + 2 * C) / 4
-        self.df[ 'MACD DIF' ], self.df[ 'DEM' ], self.df[ 'OSC' ] = talib.MACD( DIF, SHORTPERIOD, LONGPERIOD, SMOOTHPERIOD )
+        self.df[ 'MACD DIF' ], self.df[ 'DEM' ], self.df[ 'OSC' ] = talib.MACD( DIF, SHORTPERIOD, LONGPERIOD,
+                                                                                SMOOTHPERIOD )
         # ------ MACD End. ------------------------------
 
         # -------- MFI Begin. ---------------------------
@@ -129,8 +133,10 @@ class Technical_Indicator:
 
         # -------- Bollinger Bands Begin. --------
         # 布林 是 OK，但倒過來
-        self.df[ 'Upperband' ], self.df[ 'Middleband' ], self.df[ 'Dnperband' ] = talib.BBANDS( C, timeperiod = 20, nbdevup = 2,
-                                                                                    nbdevdn = 2, matype = 0 )
+        self.df[ 'Upperband' ], self.df[ 'Middleband' ], self.df[ 'Dnperband' ] = talib.BBANDS( C, timeperiod = 20,
+                                                                                                nbdevup = 2,
+                                                                                                nbdevdn = 2,
+                                                                                                matype = 0 )
         self.df[ '%BB' ] = (C - self.df[ 'Dnperband' ]) / (self.df[ 'Upperband' ] - self.df[ 'Dnperband' ])
         self.df[ 'W20' ] = (self.df[ 'Upperband' ] - self.df[ 'Dnperband' ]) / self.df[ 'MA20' ]
         # -------- Bollinger Bands Begin. --------
@@ -139,24 +145,45 @@ class Technical_Indicator:
         # 乖離 OK, 但比較是倒過來
         # 20 Bias=(C-SMA20)/SMA20
         # 60 Bias=(C-SMA60)/SMA60
-        self.df[ '20 Bias' ] = ( C - self.df[ 'MA20' ] ) / self.df[ 'MA20' ]
-        self.df[ '60 Bias' ] = ( C - self.df[ 'MA60' ] ) / self.df[ 'MA60' ]
+        self.df[ '20 Bias' ] = (C - self.df[ 'MA20' ]) / self.df[ 'MA20' ]
+        self.df[ '60 Bias' ] = (C - self.df[ 'MA60' ]) / self.df[ 'MA60' ]
         # ---------------- 乖離 指標 End. ------------------------
+
+        # *************** KD 指標 Begin. ****************************#
+        kdj_n = 9
+
+        # 计算N日内的high和low，需要滚动计算\n",
+        self.df[ 'lown' ] = self.df[ '最低' ].rolling( center = False, window = kdj_n ).min( )
+        self.df[ 'lown' ].fillna( value = pd.expanding_min( self.df[ '最低' ] ), inplace = True )
+        self.df[ 'highn' ] = pd.rolling_max( self.df[ '最高' ], kdj_n )
+        self.df[ 'highn' ].fillna( value = pd.expanding_max( self.df[ '最高' ] ), inplace = True )
+
+        self.df[ 'rsv' ] = ( self.df[ '收盤' ] - self.df[ 'lown' ]) / (self.df[ 'highn' ] - self.df[ 'lown' ]) * 100
+
+        # 计算K值
+        self.df[ 'kdj_k' ] = pd.ewma( self.df[ 'rsv' ], com = 2 )
+        # 计算D值,
+        self.df[ 'kdj_d' ] = pd.ewma( self.df[ 'kdj_k' ], com = 2 )
+        # 计算J值
+        # self.df[ 'kdj_j' ] = 3 * self.df[ 'kdj_k' ] - 2 * self.df[ 'kdj_d' ]
+        self.df.drop( 'lown', axis = 1, level = None, inplace = True )
+        self.df.drop( 'highn', axis = 1, level = None, inplace = True )
+        self.df.drop( 'rsv', axis = 1, level = None, inplace = True )
+        # *************** KD 指標 End. ******************************
 
         self.df = self.df.iloc[ ::-1 ]
 
 def main( ):
-
     ti_A = Technical_Indicator( '2330', 'D', 10 )
 
-    print( '初始化{0}', ti_A.df  )
+    print( '初始化{0}', ti_A.df )
 
     ti_A.get_technical_indicator_dataframe( )
 
     print( '查詢股號 {0} {1} {2}'.format( ti_A.number, '日線', ti_A.df ) )
     # ------------------------------------------------------
 
-    ti_W =  Technical_Indicator( '2330', 'W', 30 )
+    ti_W = Technical_Indicator( '2330', 'W', 30 )
 
     ti_W.get_technical_indicator_dataframe( )
 
@@ -165,5 +192,3 @@ def main( ):
 
 if __name__ == '__main__':
     main( )
-
-

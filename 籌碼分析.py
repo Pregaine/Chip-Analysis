@@ -281,32 +281,39 @@ df_cal = df_cal.reindex( columns = cols )
 df_cal.to_excel( df_writer, sheet_name = '買賣超金額15大' )
 # ---------------------------------------------------------------
 
-ti_a = qsp.Technical_Indicator( input_chip_str[ :4 ], 'A', 360 )
+ti_a = qsp.Technical_Indicator( input_chip_str[ :4 ], 'A', 1400 )
 
 ti_a.get_technical_indicator_dataframe( )
 
-ti_a.df.to_excel( df_writer, sheet_name = '技術指標_日線' )
+ti_a.df.to_excel( df_writer, sheet_name = '技術指標_還原日線' )
 # ---------------------------------------------------------------
 
-ti_w = qsp.Technical_Indicator( input_chip_str[ :4 ], 'W', 72 )
+ti_d = qsp.Technical_Indicator( input_chip_str[ :4 ], 'D', 1400 )
+
+ti_d.get_technical_indicator_dataframe( )
+
+ti_d.df.to_excel( df_writer, sheet_name = '技術指標_日線' )
+# ---------------------------------------------------------------
+
+ti_w = qsp.Technical_Indicator( input_chip_str[ :4 ], 'W', 800 )
 
 ti_w.get_technical_indicator_dataframe( )
 
 ti_w.df.to_excel( df_writer, sheet_name = '技術指標_周線' )
 # ---------------------------------------------------------------
 
-ti_m = qsp.Technical_Indicator( input_chip_str[ :4 ], 'M', 12 )
+ti_m = qsp.Technical_Indicator( input_chip_str[ :4 ], 'M', 300 )
 
 ti_m.get_technical_indicator_dataframe( )
 
 ti_m.df.to_excel( df_writer, sheet_name = '技術指標_月線' )
 # ---------------------------------------------------------------
 
-# ti_60min = qsp.Technical_Indicator( input_chip_str[ :4 ], '60', 1000 )
+ti_60min = qsp.Technical_Indicator( input_chip_str[ :4 ], '60', 1200 )
 #
-# ti_60min.get_technical_indicator_dataframe( )
+ti_60min.get_technical_indicator_dataframe( )
 #
-# ti_60min.df.to_excel( df_writer, sheet_name = '技術指標_60分線' )
+ti_60min.df.to_excel( df_writer, sheet_name = '技術指標_60分線' )
 # ---------------------------------------------------------------
 
 # df_compare.to_excel( df_writer, sheet_name = '比較' )
