@@ -8,7 +8,6 @@ import sys
 import query_stock_price.query_stock_price_國票證券 as qsp
 import pandas as pd
 
-
 # Todo
 # format 日期格式
 # in_df[ start_date + '買進均價' ] = df[ '買進價格*股數' ].sum( ) / df[ '買進股數' ].sum( )
@@ -20,13 +19,13 @@ df_compare = pd.DataFrame( )
 df_freq_buy = pd.Series( )
 df_freq_self = pd.Series( )
 
-# InputPath        = "..\\籌碼資料\\"
-# input_chip_str   = "1723中碳"
-# tar_str          = "1723中碳籌碼整理"
-# start_date       = "20170407"
-# end_date         = "20170414"
-# cycle_chip       = 1
-# CapitalStock     = 3530000000
+# InputPath = "..\\籌碼資料\\"
+# input_chip_str = "1723中碳"
+# tar_str = "1723中碳籌碼整理"
+# start_date = "20170407"
+# end_date = "20170414"
+# cycle_chip = 1
+# CapitalStock = 3530000000
 
 InputPath = sys.argv[ 1 ]
 input_chip_str = sys.argv[ 2 ]
@@ -140,6 +139,8 @@ for input_file in File:
 
 df_sort = df_sort[ df_sort[ '券商' ].notnull( ) ]
 
+df_sort[ '券商' ].str.replace( ' ', '' )
+
 df_sort[ '買進價格*股數' ] = df_sort[ '買進股數' ] * df_sort[ '價格' ]
 df_sort[ '賣出價格*股數' ] = df_sort[ '賣出股數' ] * df_sort[ '價格' ]
 # --------------------------------------------------------
@@ -148,9 +149,6 @@ df_sort.drop( '價格', axis = 1, level = None, inplace = True )
 df_sort.drop( '序號', axis = 1, level = None, inplace = True )
 # -------------------------------------------------------
 
-df_sort[ '買賣超' ]   = df_sort[ '買進股數' ] - df_sort[ '賣出股數' ]
-# --------------------------------------------------------
-
 df_sort[ '日期' ] = pd.to_datetime( df_sort[ '日期' ], format = '%Y%m%d' )
 
 df_sort = df_sort.groupby( [ '券商', '日期' ] ).sum( ).reset_index( )
@@ -158,7 +156,21 @@ df_sort = df_sort.groupby( [ '券商', '日期' ] ).sum( ).reset_index( )
 df_sort[ '買進均價' ] = df_sort[ '買進價格*股數' ] / df_sort[ '買進股數' ]
 df_sort[ '賣出均價' ] = df_sort[ '賣出價格*股數' ] / df_sort[ '賣出股數' ]
 
-cols = [ '券商', '日期', '買進均價', '賣出均價', '買賣超', '買進價格*股數', '賣出價格*股數' ]
+df_sort[ '買進張數' ] = df_sort[ '買進股數' ] / 1000
+df_sort[ '賣出張數' ] = df_sort[ '賣出股數' ] / 1000
+
+df_sort[ '買進價格*張數' ] = df_sort[ '買進價格*股數' ] / 1000
+df_sort[ '賣出價格*張數' ] = df_sort[ '賣出價格*股數' ] / 1000
+
+df_sort[ '買賣超金額' ] = df_sort[ '買進價格*股數' ] - df_sort[ '賣出價格*股數' ]
+
+df_sort[ '買賣超張數' ] = df_sort[ '買進張數' ] - df_sort[ '賣出張數' ]
+
+df_sort[ '買賣超股數' ] = df_sort[ '買進股數' ] - df_sort[ '賣出股數' ]
+
+df_sort[ '買賣超佔股本比' ] = df_sort[ '買賣超金額' ] / CapitalStock
+
+cols = [ '券商', '日期', '買進均價', '賣出均價', '買進張數', '賣出張數', '買賣超張數', '買賣超股數', '買進價格*張數', '賣出價格*張數', '買賣超金額', '買賣超佔股本比' ]
 
 df_sort = df_sort.reindex( columns = cols )
 # ------------------------------------------------------------------------------
@@ -169,17 +181,12 @@ df_sort = df_sort.reindex( columns = cols )
 # --------------------------------------------------------------------------------
 
 for i in range( len( Start ) ):
-    start_date = Start[ i ].strftime( '%Y%m%d' )
-    # ------------------------------------------------------------------------------
-
     # 取出含有字串買賣超金額及券商的columns為另一個Dataframe
     # ------------------------------------------------------------------------------
 
     df_buy15 = df_sort[ (df_sort[ '買進均價' ] > 0) & (df_sort[ '日期' ] == Start[ i ]) ].copy( )
 
     chip_buy_count = df_buy15.drop_duplicates( subset = [ '券商', '日期' ], keep = 'first' )[ '券商' ].count( )
-
-    df_buy15[ '買賣超金額' ] = df_buy15[ '買進價格*股數' ] - df_buy15[ '賣出價格*股數' ]
 
     df_buy15.sort_values( by = '買賣超金額', axis = 0, ascending = False, inplace = True )
 
@@ -193,8 +200,6 @@ for i in range( len( Start ) ):
     df_self15 = df_sort[ (df_sort[ '賣出均價' ] > 0) & (df_sort[ '日期' ] == Start[ i ]) ].copy( )
 
     chip_self_count = df_self15.drop_duplicates( subset = [ '券商', '日期' ], keep = 'first' )[ '券商' ].count( )
-
-    df_self15[ '買賣超金額' ] = df_self15[ '買進價格*股數' ] - df_self15[ '賣出價格*股數' ]
 
     df_self15 = df_self15.sort_values( by = '買賣超金額', axis = 0, ascending = True )
 
@@ -224,17 +229,21 @@ for i in range( len( Start ) ):
 
     df_tmp = pd.DataFrame(
 
-        { '日期': start_date,
+        { '日期': Start[ i ],
 
-          '前15大買進均價': df_buy15[ '買賣超金額' ].sum( ) / df_buy15[ '買賣超' ].sum( ),
+          '前15大買進均價': df_buy15[ '買賣超金額' ].sum( ) / df_buy15[ '買賣超股數' ].sum( ),
 
           '前15大買超佔股本比': df_buy15[ '買賣超金額' ].sum( ) / CapitalStock * 100,
 
-          '前15大賣出均價': df_self15[ '買賣超金額' ].sum( ) / df_self15[ '買賣超' ].sum( ),
+          '前15大賣出均價': df_self15[ '買賣超金額' ].sum( ) / df_self15[ '買賣超股數' ].sum( ),
 
-          '前15大賣超佔股本比': df_self15[ '買賣超金額' ].sum( ) / CapitalStock * 100,
+          '前15大賣超佔股本比': -df_self15[ '買賣超金額' ].sum( ) / CapitalStock * 100,
 
-          '前15大買賣超張數': df_buy15[ '買賣超' ].sum( ) - df_self15[ '買賣超' ].sum( ),
+          '前15大買超張數': df_buy15[ '買賣超張數' ].sum( ),
+
+          '前15大賣超張數': -df_self15[ '買賣超張數' ].sum( ),
+
+          '前15大買賣超張數': df_buy15[ '買賣超張數' ].sum( ) + df_self15[ '買賣超張數' ].sum( ),
 
           '當日總卷商買家數': chip_buy_count,
 
@@ -242,7 +251,7 @@ for i in range( len( Start ) ):
 
           '當日總卷商買賣家數': list_all_chip_count
 
-          }, index = [ start_date ] )
+          }, index = [ Start[ i ] ] )
 
     df_cal = pd.concat( [ df_cal, df_tmp ] )
     # -----------------------------------------------------------------------------
@@ -259,61 +268,55 @@ df_writer = pd.ExcelWriter( tar_str + '.xls' )
 df_sort.to_excel( df_writer, sheet_name = '籌碼分析' )
 # ---------------------------------------------------
 
-# 排序寫入欄位
-# 日期範圍
-# 前15大買超佔股本比
-# 前15大賣超佔股本比
-# 前15大買進均價
-# 前15大賣出均價
 # -------------------------------------------------
-
-df_cal[ '股本' ] = CapitalStock
-
-cols = [ '股本', '前15大買超佔股本比', '前15大賣超佔股本比', '前15大買賣超張數', '前15大買進均價', '前15大賣出均價',
-         '當日總卷商買賣家數', '當日總卷商買家數', '當日總卷商賣家數' ]
-
-df_cal = df_cal.reindex( columns = cols )
-
-# ------------------------------------------------
 # 取得收盤價
 # ------------------------------------------------
-
-df_cal.to_excel( df_writer, sheet_name = '買賣超金額15大' )
-# ---------------------------------------------------------------
 
 ti_a = qsp.Technical_Indicator( input_chip_str[ :4 ], 'A', 1400 )
 
 ti_a.get_technical_indicator_dataframe( )
-
-ti_a.df.to_excel( df_writer, sheet_name = '技術指標_還原日線' )
 # ---------------------------------------------------------------
 
 ti_d = qsp.Technical_Indicator( input_chip_str[ :4 ], 'D', 1400 )
 
 ti_d.get_technical_indicator_dataframe( )
-
-ti_d.df.to_excel( df_writer, sheet_name = '技術指標_日線' )
 # ---------------------------------------------------------------
 
 ti_w = qsp.Technical_Indicator( input_chip_str[ :4 ], 'W', 800 )
 
 ti_w.get_technical_indicator_dataframe( )
-
-ti_w.df.to_excel( df_writer, sheet_name = '技術指標_周線' )
 # ---------------------------------------------------------------
 
 ti_m = qsp.Technical_Indicator( input_chip_str[ :4 ], 'M', 300 )
 
 ti_m.get_technical_indicator_dataframe( )
-
-ti_m.df.to_excel( df_writer, sheet_name = '技術指標_月線' )
 # ---------------------------------------------------------------
 
 ti_60min = qsp.Technical_Indicator( input_chip_str[ :4 ], '60', 1200 )
 #
 ti_60min.get_technical_indicator_dataframe( )
-#
+# ---------------------------------------------------------------
+
+df_cal[ '股本' ] = CapitalStock
+
+cols = [ '股本', '前15大買超佔股本比', '前15大賣超佔股本比', '前15大買超張數', '前15大賣超張數', '前15大買賣超張數', '前15大買進均價', '前15大賣出均價', '當日總卷商買賣家數',
+         '當日總卷商買家數', '當日總卷商賣家數', '收盤', '成交量' ]
+
+tmp = ti_a.df.loc[ :, [ '日期', '收盤', '成交量' ] ]
+
+tmp[ '日期' ] = pd.to_datetime( tmp[ '日期' ], format = '%Y/%m/%d' )
+
+df_cal = pd.merge( tmp, df_cal, how = 'inner', on = '日期' )
+
+df_cal = df_cal.reindex( columns = cols )
+
+df_cal.to_excel( df_writer, sheet_name = '買賣超金額15大' )
+
 ti_60min.df.to_excel( df_writer, sheet_name = '技術指標_60分線' )
+ti_a.df.to_excel( df_writer, sheet_name = '技術指標_還原日線' )
+ti_d.df.to_excel( df_writer, sheet_name = '技術指標_日線' )
+ti_w.df.to_excel( df_writer, sheet_name = '技術指標_周線' )
+ti_m.df.to_excel( df_writer, sheet_name = '技術指標_月線' )
 # ---------------------------------------------------------------
 
 # df_compare.to_excel( df_writer, sheet_name = '比較' )

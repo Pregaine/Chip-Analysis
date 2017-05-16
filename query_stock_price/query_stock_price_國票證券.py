@@ -154,16 +154,17 @@ class Technical_Indicator:
 
         # 计算N日内的high和low，需要滚动计算\n",
         self.df[ 'lown' ] = self.df[ '最低' ].rolling( center = False, window = kdj_n ).min( )
-        self.df[ 'lown' ].fillna( value = pd.expanding_min( self.df[ '最低' ] ), inplace = True )
-        self.df[ 'highn' ] = pd.rolling_max( self.df[ '最高' ], kdj_n )
-        self.df[ 'highn' ].fillna( value = pd.expanding_max( self.df[ '最高' ] ), inplace = True )
+        self.df[ 'lown' ].fillna( value = self.df[ '最低' ].expanding( min_periods = 1 ).min( ), inplace = True )
+        self.df[ 'highn' ] = self.df[ '最高' ].rolling( center = False, window = kdj_n ).max( )
+        self.df[ 'highn' ].fillna( value = self.df[ '最高' ].expanding( min_periods = 1 ).max( ), inplace = True )
 
-        self.df[ 'rsv' ] = ( self.df[ '收盤' ] - self.df[ 'lown' ]) / (self.df[ 'highn' ] - self.df[ 'lown' ]) * 100
+        self.df[ 'rsv' ] = (self.df[ '收盤' ] - self.df[ 'lown' ]) / (self.df[ 'highn' ] - self.df[ 'lown' ]) * 100
 
         # 计算K值
-        self.df[ 'kdj_k' ] = pd.ewma( self.df[ 'rsv' ], com = 2 )
+        self.df[ 'kdj_k' ] = self.df[ 'rsv' ].ewm( ignore_na = False, adjust = True, com = 2, min_periods = 0 ).mean( )
         # 计算D值,
-        self.df[ 'kdj_d' ] = pd.ewma( self.df[ 'kdj_k' ], com = 2 )
+        self.df[ 'kdj_d' ] = self.df[ 'kdj_k' ].ewm( ignore_na = False, adjust = True, com = 2,
+                                                     min_periods = 0 ).mean( )
         # 计算J值
         # self.df[ 'kdj_j' ] = 3 * self.df[ 'kdj_k' ] - 2 * self.df[ 'kdj_d' ]
         self.df.drop( 'lown', axis = 1, level = None, inplace = True )
