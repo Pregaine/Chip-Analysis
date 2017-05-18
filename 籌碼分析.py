@@ -6,6 +6,7 @@ import os.path
 import re
 import sys
 import query_stock_price.query_stock_price_國票證券 as qsp
+import chip_concentrate.chip_concentrate as cqy
 import pandas as pd
 
 # Todo
@@ -42,11 +43,11 @@ global_start_date = start_date
 
 print( "股本", CapitalStock )
 
-def Cal_ChipDateList( Path, chip_str, start_date_str, end_date_str, cycle ):
-    start_date_list = [ ]
-    end_date_list = [ ]
+def Cal_ChipDateList( Path, chip_str, start_date_str, end_date_str ):
+
     file_list = [ ]
-    time_list = [ ]
+    time_obj_list = [ ]
+
 
     theday_obj = datetime.datetime.strptime( start_date_str, '%Y%m%d' )
     endday_obj = datetime.datetime.strptime( end_date_str, '%Y%m%d' )
@@ -59,65 +60,14 @@ def Cal_ChipDateList( Path, chip_str, start_date_str, end_date_str, cycle ):
 
         if os.path.exists( FilePath ):
             file_list.append( FilePath )
-            time_list.append( theday_obj )
+            time_obj_list.append( theday_obj )
 
         theday_obj += datetime.timedelta( days = 1 )
         theday_str = theday_obj.strftime( '_%Y%m%d' )
 
-    time_obj = [ time_list[ i: i + cycle ] for i in range( 0, len( time_list ), cycle ) ]
+    return time_obj_list, file_list
 
-    for i in time_obj:
-        start_date_list.append( i[ 0 ] )
-        end_date_list.append( i[ - 1 ] )
-
-    start_date_list = start_date_list
-    end_date_list = end_date_list
-
-    return start_date_list, end_date_list, file_list
-
-def remove_whitespace( x ):
-    try:
-        # Remove spaces inside of the string
-        x = "".join( x.split( ) )
-    except:
-        pass
-    return x
-
-Start, End, File = Cal_ChipDateList( InputPath, input_chip_str, start_date, end_date, cycle_chip )
-
-# print( 'Start List', Start )
-# print( 'End List', End )
-# print( File, len( File ) )
-# ---------------------------------------------------
-# 時間字串格式判定
-# ---------------------------------------------------
-# start_time_obj = datetime.strptime( start_date[ 0 ], '%Y%m%d' )
-# end_time_obj   = datetime.strptime( end_date, '%Y%m%d' )
-# ---------------------------------------------------
-
-# chip_str    = input_chip_str + '*.csv'
-
-# if os.path.isfile( tar_str + '.sqlite' ):
-#
-#     with sqlite3.connect( tar_str + '.sqlite' ) as db:
-#
-#         df_compare = pd.read_sql_query( 'select * from df', con = db )
-#         # 讀出 df_comapre 日期範圍
-#         print( df_compare[ '日期範圍' ] )
-#         print( Start )
-#
-#         for val in df_compare[ '日期範圍' ]:
-#
-#             date_obj = datetime.datetime.strptime( val, '%Y%m%d' )
-#
-#             if date_obj in Start:
-#                 Start.remove( date_obj )
-#
-#         print( 'Start', Start )
-#
-# if len( Start ) == 0:
-#     print( 'exit' )
-#     exit()
+Tiem_Obj, File = Cal_ChipDateList( InputPath, input_chip_str, start_date, end_date )
 
 for input_file in File:
     re_obj = re.compile( r'[0-9]{8}' )
@@ -170,103 +120,7 @@ df_sort[ '買賣超股數' ] = df_sort[ '買進股數' ] - df_sort[ '賣出股�
 
 df_sort[ '買賣超佔股本比' ] = df_sort[ '買賣超金額' ] / CapitalStock
 
-cols = [ '券商', '日期', '買進均價', '賣出均價', '買進張數', '賣出張數', '買賣超張數', '買賣超股數', '買進價格*張數', '賣出價格*張數', '買賣超金額', '買賣超佔股本比' ]
-
-df_sort = df_sort.reindex( columns = cols )
-# ------------------------------------------------------------------------------
-
-# 取出日期範圍內買賣超金額前15大，保留買賣超金額，卷商，買進均價
-# 日期範圍從Start, End時間物件得到
-# 產生dataframe表格數量從Start, End時間物件得出
-# --------------------------------------------------------------------------------
-
-for i in range( len( Start ) ):
-    # 取出含有字串買賣超金額及券商的columns為另一個Dataframe
-    # ------------------------------------------------------------------------------
-
-    df_buy15 = df_sort[ (df_sort[ '買進均價' ] > 0) & (df_sort[ '日期' ] == Start[ i ]) ].copy( )
-
-    chip_buy_count = df_buy15.drop_duplicates( subset = [ '券商', '日期' ], keep = 'first' )[ '券商' ].count( )
-
-    df_buy15.sort_values( by = '買賣超金額', axis = 0, ascending = False, inplace = True )
-
-    df_buy15 = df_buy15[ :15 ]
-    # -------------------------------------------------------------------------------
-
-    # ------------------------------------------------------------------------------
-    # 取出含有字串買賣超金額及券商的columns為另一個Dataframe
-    # ------------------------------------------------------------------------------
-
-    df_self15 = df_sort[ (df_sort[ '賣出均價' ] > 0) & (df_sort[ '日期' ] == Start[ i ]) ].copy( )
-
-    chip_self_count = df_self15.drop_duplicates( subset = [ '券商', '日期' ], keep = 'first' )[ '券商' ].count( )
-
-    df_self15 = df_self15.sort_values( by = '買賣超金額', axis = 0, ascending = True )
-
-    df_self15 = df_self15[ :15 ]
-    # ------------------------------------------------------------------------------
-
-    list_all_chip = df_sort[ ((df_sort[ '買進均價' ] > 0) | (df_sort[ '賣出均價' ] > 0)) & (df_sort[ '日期' ] == Start[ i ]) ][
-        '券商' ]
-
-    list_all_chip_count = len( set( list_all_chip ) )
-    # -----------------------------------------------------------------------------
-
-    # -----------------------------------------------------------------------------
-    # 計算前15大買進券商出現次數
-    # 計算前15大賣出券商出現次數
-    # ------------------------------------------------------------------------------
-    df_freq_buy = df_freq_buy.append( df_buy15[ '券商' ] )
-    df_freq_self = df_freq_self.append( df_self15[ '券商' ] )
-    # ----------------------------------------------------------------------------
-
-    # -----------------------------------------------------------------------------
-    # 計算前15大買進均價
-    # 計算前15大賣出均價
-    # 計算前15大買超佔股本比
-    # 計算前15大賣超佔股本比
-    # ------------------------------------------------------------------------------
-
-    df_tmp = pd.DataFrame(
-
-        { '日期': Start[ i ],
-
-          '前15大買進均價': df_buy15[ '買賣超金額' ].sum( ) / df_buy15[ '買賣超股數' ].sum( ),
-
-          '前15大買超佔股本比': df_buy15[ '買賣超金額' ].sum( ) / CapitalStock * 100,
-
-          '前15大賣出均價': df_self15[ '買賣超金額' ].sum( ) / df_self15[ '買賣超股數' ].sum( ),
-
-          '前15大賣超佔股本比': -df_self15[ '買賣超金額' ].sum( ) / CapitalStock * 100,
-
-          '前15大買超張數': df_buy15[ '買賣超張數' ].sum( ),
-
-          '前15大賣超張數': -df_self15[ '買賣超張數' ].sum( ),
-
-          '前15大買賣超張數': df_buy15[ '買賣超張數' ].sum( ) + df_self15[ '買賣超張數' ].sum( ),
-
-          '當日總卷商買家數': chip_buy_count,
-
-          '當日總卷商賣家數': chip_self_count,
-
-          '當日總卷商買賣家數': list_all_chip_count
-
-          }, index = [ Start[ i ] ] )
-
-    df_cal = pd.concat( [ df_cal, df_tmp ] )
-    # -----------------------------------------------------------------------------
-
-# 整組DataFrame根據index翻轉排序
-
-df_cal = df_cal.iloc[ ::-1 ]
-# ---------------------------------------------------------------------------------
-
-df_freq_buy = df_freq_buy.value_counts( )[ :15 ]
-df_freq_self = df_freq_self.value_counts( )[ :15 ]
-
-df_writer = pd.ExcelWriter( tar_str + '.xls' )
-df_sort.to_excel( df_writer, sheet_name = '籌碼分析' )
-# ---------------------------------------------------
+df_sort[ '股本' ] = CapitalStock
 
 # -------------------------------------------------
 # 取得收盤價
@@ -297,56 +151,92 @@ ti_60min = qsp.Technical_Indicator( input_chip_str[ :4 ], '60', 1200 )
 ti_60min.get_technical_indicator_dataframe( )
 # ---------------------------------------------------------------
 
-df_cal[ '股本' ] = CapitalStock
-
-cols = [ '股本', '前15大買超佔股本比', '前15大賣超佔股本比', '前15大買超張數', '前15大賣超張數', '前15大買賣超張數', '前15大買進均價', '前15大賣出均價', '當日總卷商買賣家數',
-         '當日總卷商買家數', '當日總卷商賣家數', '收盤', '成交量' ]
+cols = [ '券商', '日期', '買進均價', '賣出均價', '買進張數', '賣出張數', '買賣超張數', '買賣超股數', '買進價格*張數', '賣出價格*張數',
+         '買賣超金額', '買賣超佔股本比', '股本', '收盤', '成交量' ]
 
 tmp = ti_a.df.loc[ :, [ '日期', '收盤', '成交量' ] ]
 
 tmp[ '日期' ] = pd.to_datetime( tmp[ '日期' ], format = '%Y/%m/%d' )
 
-df_cal = pd.merge( tmp, df_cal, how = 'inner', on = '日期' )
+df_sort = pd.merge( tmp, df_sort, how = 'inner', on = '日期' )
 
-df_cal = df_cal.reindex( columns = cols )
+df_sort = df_sort.reindex( columns = cols )
+# ---------------------------------------------------------------------------------
 
-df_cal.to_excel( df_writer, sheet_name = '買賣超金額15大' )
+Day_1_Obj = cqy.Chip_Concentrate( df_sort, Tiem_Obj, interval_day = 1 )
+
+Day_1_df = Day_1_Obj.sort_source( )
+
+Day_5_Obj = cqy.Chip_Concentrate( df_sort, Tiem_Obj, interval_day = 5 )
+
+Day_5_df = Day_5_Obj.sort_source( )
+
+Day_10_Obj = cqy.Chip_Concentrate( df_sort, Tiem_Obj, interval_day = 10 )
+
+Day_10_df = Day_10_Obj.sort_source( )
+
+Day_20_Obj = cqy.Chip_Concentrate( df_sort, Tiem_Obj, interval_day = 20 )
+
+Day_20_df = Day_20_Obj.sort_source( )
+
+Day_30_Obj = cqy.Chip_Concentrate( df_sort, Tiem_Obj, interval_day = 30 )
+
+Day_30_df = Day_30_Obj.sort_source( )
+
+Day_45_Obj = cqy.Chip_Concentrate( df_sort, Tiem_Obj, interval_day = 45 )
+
+Day_45_df = Day_45_Obj.sort_source( )
+
+Day_60_Obj = cqy.Chip_Concentrate( df_sort, Tiem_Obj, interval_day = 60 )
+
+Day_60_df = Day_60_Obj.sort_source( )
+
+Day_120_Obj = cqy.Chip_Concentrate( df_sort, Tiem_Obj, interval_day = 120 )
+
+Day_120_df = Day_120_Obj.sort_source( )
+
+Day_240_Obj = cqy.Chip_Concentrate( df_sort, Tiem_Obj, interval_day = 240 )
+
+Day_240_df = Day_240_Obj.sort_source( )
+# ---------------------------------------------------
+
+df_writer = pd.ExcelWriter( tar_str + '.xls' )
+df_sort.to_excel( df_writer, sheet_name = '籌碼分析' )
+
+Day_1_df.to_excel( df_writer, sheet_name = '1日買賣超金額15大' )
+Day_5_df.to_excel( df_writer, sheet_name = '5日買賣超金額15大' )
+Day_10_df.to_excel( df_writer, sheet_name = '10日買賣超金額15大' )
+Day_20_df.to_excel( df_writer, sheet_name = '20日買賣超金額15大' )
+Day_30_df.to_excel( df_writer, sheet_name = '30日買賣超金額15大' )
+Day_45_df.to_excel( df_writer, sheet_name = '45日買賣超金額15大' )
+Day_60_df.to_excel( df_writer, sheet_name = '60日買賣超金額15大' )
+Day_120_df.to_excel( df_writer, sheet_name = '120日買賣超金額15大' )
+Day_240_df.to_excel( df_writer, sheet_name = '240日買賣超金額15大' )
 
 ti_60min.df.to_excel( df_writer, sheet_name = '技術指標_60分線' )
 ti_a.df.to_excel( df_writer, sheet_name = '技術指標_還原日線' )
 ti_d.df.to_excel( df_writer, sheet_name = '技術指標_日線' )
 ti_w.df.to_excel( df_writer, sheet_name = '技術指標_周線' )
 ti_m.df.to_excel( df_writer, sheet_name = '技術指標_月線' )
-# ---------------------------------------------------------------
-
-# df_compare.to_excel( df_writer, sheet_name = '比較' )
-
-# with sqlite3.connect( tar_str + '.sqlite' ) as db:
-#     df_cal.to_sql( 'df', con = db, if_exists = 'replace' )
-
-# print( df_cal.info( ) )
-# print( "----------------------------" )
-# print( df_compare.info( ) )
-
-# if df_compare.equals( df_cal ):
-#     print( "compare true" )
-# else:
-#     print( "compare fail" )
-
-tmp_1 = df_freq_buy.to_frame( )
-
-tmp_1.columns = [ '累加買進次數' ]
-
-tmp_1.sort_values( by = '累加買進次數', axis = 0, ascending = False, inplace = True )
-
-tmp_2 = df_freq_self.to_frame( )
-
-tmp_2.columns = [ '累加賣出次數' ]
-
-tmp_2.sort_values( by = '累加賣出次數', axis = 0, ascending = False, inplace = True )
-
-tmp_1.to_excel( df_writer, sheet_name = '買超券商' )
-
-tmp_2.to_excel( df_writer, sheet_name = '賣超券商' )
 
 df_writer.save( )
+# ---------------------------------------------------------------
+
+# df_freq_buy = df_freq_buy.value_counts( )[ :15 ]
+# df_freq_self = df_freq_self.value_counts( )[ :15 ]
+#
+# tmp_1 = df_freq_buy.to_frame( )
+#
+# tmp_1.columns = [ '累加買進次數' ]
+#
+# tmp_1.sort_values( by = '累加買進次數', axis = 0, ascending = False, inplace = True )
+#
+# tmp_2 = df_freq_self.to_frame( )
+#
+# tmp_2.columns = [ '累加賣出次數' ]
+#
+# tmp_2.sort_values( by = '累加賣出次數', axis = 0, ascending = False, inplace = True )
+#
+# tmp_1.to_excel( df_writer, sheet_name = '買超券商' )
+#
+# tmp_2.to_excel( df_writer, sheet_name = '賣超券商' )
