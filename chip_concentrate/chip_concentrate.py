@@ -37,7 +37,9 @@ class Chip_Concentrate:
 
             chip_buy_count = df_buy15.drop_duplicates( subset = [ '券商', '日期' ], keep = 'first' )[ '券商' ].count( )
 
-            df_buy15.sort_values( by = '買賣超金額', axis = 0, ascending = False, inplace = True )
+            df_buy15 = df_buy15.groupby( [ '券商' ] ).sum( ).reset_index( )
+
+            df_buy15.sort_values( by = '買賣超張數', axis = 0, ascending = False, inplace = True )
 
             df_buy15 = df_buy15[ :15 ]
             # -------------------------------------------------------------------------------
@@ -51,7 +53,9 @@ class Chip_Concentrate:
 
             chip_self_count = df_self15.drop_duplicates( subset = [ '券商', '日期' ], keep = 'first' )[ '券商' ].count( )
 
-            df_self15 = df_self15.sort_values( by = '買賣超金額', axis = 0, ascending = True )
+            df_self15 = df_self15.groupby( [ '券商' ] ).sum( ).reset_index( )
+
+            df_self15 = df_self15.sort_values( by = '買賣超張數', axis = 0, ascending = True )
 
             df_self15 = df_self15[ :15 ]
             # ------------------------------------------------------------------------------
