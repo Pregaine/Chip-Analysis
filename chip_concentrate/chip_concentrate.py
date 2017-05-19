@@ -32,32 +32,21 @@ class Chip_Concentrate:
             # 取出含有字串買賣超金額及券商的columns為另一個Dataframe
             # ------------------------------------------------------------------------------
 
-            df_buy15 = self.df[ (self.df[ '買進均價' ] > 0) & (self.df[ '日期' ] >= self.start_day_list[ i ]) & (
-                self.df[ '日期' ] <= self.end_day_list[ i ]) ].copy( )
+            tmp = self.df[ ( self.df[ '日期' ] >= self.start_day_list[ i ] ) & ( self.df[ '日期' ] <= self.end_day_list[ i ]) ].copy( )
 
-            chip_buy_count = df_buy15.drop_duplicates( subset = [ '券商', '日期' ], keep = 'first' )[ '券商' ].count( )
+            tmp = tmp.groupby( [ '券商' ] ).sum( ).reset_index( )
 
-            df_buy15 = df_buy15.groupby( [ '券商' ] ).sum( ).reset_index( )
+            tmp.sort_values( by = '買賣超張數', axis = 0, ascending = False, inplace = True )
 
-            df_buy15.sort_values( by = '買賣超張數', axis = 0, ascending = False, inplace = True )
+            df_buy15 = tmp[ :15 ]
 
-            df_buy15 = df_buy15[ :15 ]
-            # -------------------------------------------------------------------------------
+            df_self15 = tmp[ -15: ]
 
-            # ------------------------------------------------------------------------------
-            # 取出含有字串買賣超金額及券商的columns為另一個Dataframe
-            # ------------------------------------------------------------------------------
+            chip_buy_count = tmp[ tmp[ '買進均價'] > 0 ].drop_duplicates( subset = [ '券商' ], keep = 'first' )[ '券商' ].count( )
 
-            df_self15 = self.df[ (self.df[ '賣出均價' ] > 0) & (self.df[ '日期' ] >= self.start_day_list[ i ]) & (
-                self.df[ '日期' ] <= self.end_day_list[ i ]) ].copy( )
+            chip_self_count =  tmp[ tmp[ '賣出均價' ] > 0 ].drop_duplicates( subset = [ '券商' ], keep = 'first' )[ '券商' ].count( )
 
-            chip_self_count = df_self15.drop_duplicates( subset = [ '券商', '日期' ], keep = 'first' )[ '券商' ].count( )
-
-            df_self15 = df_self15.groupby( [ '券商' ] ).sum( ).reset_index( )
-
-            df_self15 = df_self15.sort_values( by = '買賣超張數', axis = 0, ascending = True )
-
-            df_self15 = df_self15[ :15 ]
+            # chip_self_count = tmp.drop_duplicates( subset = [ '券商', '日期' ], keep = 'first' )[ '券商' ].count( )
             # ------------------------------------------------------------------------------
 
             list_all_chip = self.df[
