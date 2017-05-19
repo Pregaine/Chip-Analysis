@@ -21,10 +21,10 @@ df_freq_buy = pd.Series( )
 df_freq_self = pd.Series( )
 
 # InputPath = "..\\籌碼資料\\"
-# input_chip_str = "1723中碳"
-# tar_str = "1723中碳籌碼整理"
-# start_date = "20170407"
-# end_date = "20170414"
+# input_chip_str = "2330台積電"
+# tar_str = "2330台積電籌碼整理"
+# start_date = "20170410"
+# end_date = "20170512"
 # cycle_chip = 1
 # CapitalStock = 3530000000
 

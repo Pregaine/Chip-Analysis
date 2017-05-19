@@ -79,13 +79,18 @@ class Chip_Concentrate:
 
             while theday_obj <= endday_obj:
 
-                vol_df = self.df[ self.df[ '日期' ] == theday_obj ][ '成交量' ]
-                vol = vol + vol_df.iloc[ 0 ]
+                vol_df = self.df[ self.df[ '日期' ] == theday_obj ][ '成交量' ].reset_index( )
 
-                close_df = self.df[ self.df[ '日期' ] == theday_obj ][ '收盤' ]
-                close = close + close_df.iloc[ 0 ]
+                if not vol_df.empty:
 
-                cnt += 1
+                    vol = vol + vol_df[ '成交量' ].iloc[ 0 ]
+
+                    close_df = self.df[ self.df[ '日期' ] == theday_obj ][ '收盤' ].reset_index( )
+
+                    close = close + close_df[ '收盤' ].iloc[ 0 ]
+
+                    cnt += 1
+
                 theday_obj += datetime.timedelta( days = 1 )
 
             close = close / cnt
