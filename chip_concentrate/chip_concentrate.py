@@ -18,13 +18,23 @@ class Chip_Concentrate:
 
         self.inter_day = interval_day
 
-        time_obj = [ day_list[ i: i + interval_day ] for i in range( 0, len( day_list ), interval_day ) ]
-
-        for i in time_obj:
-            self.start_day_list.append( i[ 0 ] )
-            self.end_day_list.append( i[ - 1 ] )
+        self.time_obj = day_list.copy( )
 
     def sort_source( self ):
+
+        while len( self.time_obj ) is not 0:
+
+            if len( self.time_obj ) <= self.inter_day:
+
+                self.start_day_list.append( self.time_obj[ 0 ] )
+                self.end_day_list.append( self.time_obj[ -1 ] )
+                del self.time_obj[ : ]
+
+            else:
+
+                self.start_day_list.append( self.time_obj[ 0 ] )
+                self.end_day_list.append( self.time_obj[ self.inter_day - 1 ] )
+                self.time_obj.pop( 0 )
 
         result = pd.DataFrame( )
 
