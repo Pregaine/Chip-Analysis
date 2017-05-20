@@ -43,6 +43,19 @@ global_start_date = start_date
 
 print( "股本", CapitalStock )
 
+def remove_whitespace(x):
+    """
+    Helper function to remove any blank space from a string
+    x: a string
+    """
+    try:
+        # Remove spaces inside of the string
+        x = "".join(x.split())
+
+    except:
+        pass
+    return x
+
 def Cal_ChipDateList( Path, chip_str, start_date_str, end_date_str ):
 
     file_list = [ ]
@@ -89,7 +102,7 @@ for input_file in File:
 
 df_sort = df_sort[ df_sort[ '券商' ].notnull( ) ]
 
-df_sort[ '券商' ].str.replace( ' ', '' )
+df_sort[ '券商' ] = df_sort[ '券商' ].str.replace('\s+', '')
 
 df_sort[ '買進價格*股數' ] = df_sort[ '買進股數' ] * df_sort[ '價格' ]
 df_sort[ '賣出價格*股數' ] = df_sort[ '賣出股數' ] * df_sort[ '價格' ]
@@ -200,7 +213,7 @@ Day_240_Obj = cqy.Chip_Concentrate( df_sort, Tiem_Obj, interval_day = 240 )
 Day_240_df = Day_240_Obj.sort_source( )
 # ---------------------------------------------------
 
-df_writer = pd.ExcelWriter( tar_str + '.xls' )
+df_writer = pd.ExcelWriter( tar_str + '.xlsx' )
 df_sort.to_excel( df_writer, sheet_name = '籌碼分析' )
 
 Day_1_df.to_excel( df_writer, sheet_name = '1日買賣超金額15大' )
