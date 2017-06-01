@@ -20,6 +20,8 @@ class Chip_Concentrate:
 
         self.time_obj = day_list.copy( )
 
+        self.target_df = pd.DataFrame( )
+
     def sort_source( self ):
 
         while len( self.time_obj ) is not 0:
@@ -128,23 +130,36 @@ class Chip_Concentrate:
 
                     '當日總卷商買賣家數': list_all_chip_count,
 
-                    str( self.inter_day ) + '日集中度': ( df_buy15[ '買賣超張數' ].sum( ) + df_self15[ '買賣超張數' ].sum( ) ) / vol * 100
+                    str( self.inter_day ) + '日集中度': ( df_buy15[ '買賣超張數' ].sum( ) + df_self15[ '買賣超張數' ].sum( ) ) / vol * 100,
 
-                  }, index = [ self.start_day_list[ i ].strftime( "%Y%m%d" ) + '~' + self.end_day_list[ i ].strftime( "%Y%m%d" ) ] )
+                    '日期' : self.start_day_list[ i ].strftime( "%Y%m%d" ) + '~' + self.end_day_list[ i ].strftime( "%Y%m%d" )
+
+                  }, index = [ 0 ] )
 
             result = pd.concat( [ result, df_tmp ] )
 
         # 整組DataFrame根據index翻轉排序
 
         result = result.iloc[ ::-1 ]
+
+        result.reset_index( inplace = True )
          # -----------------------------------------------------------------------------
 
-        cols = [ '股本', '前15大買超佔股本比', '前15大賣超佔股本比', '前15大買超張數', '前15大賣超張數', '前15大買賣超張數', '前15大買進均價', '前15大賣出均價',
-        '當日總卷商買賣家數', '當日總卷商買家數', '當日總卷商賣家數', str( self.inter_day ) + '日集中度', '收盤', '成交量' ]
+        cols = [ '日期', '股本', '前15大買超佔股本比', '前15大賣超佔股本比', '前15大買超張數', '前15大賣超張數', '前15大買賣超張數',
+                 '前15大買進均價', '前15大賣出均價', '當日總卷商買賣家數', '當日總卷商買家數', '當日總卷商賣家數',
+                 '收盤', '成交量', str( self.inter_day ) + '日集中度' ]
 
         result = result.reindex( columns = cols )
 
+        self.target_df = result
+
         return result
+
+    def get_concentration_ratio( self ):
+
+        # '集中度', type( self.target_df[ str( self.inter_day ) + '日集中度' ] ),
+
+        return self.target_df[ str( self.inter_day ) + '日集中度' ]
 
 def main( ):
     pass

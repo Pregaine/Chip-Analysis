@@ -137,8 +137,8 @@ class Technical_Indicator:
                                                                                                 nbdevup = 2,
                                                                                                 nbdevdn = 2,
                                                                                                 matype = 0 )
-        self.df[ '%BB' ] = (C - self.df[ 'Dnperband' ]) / (self.df[ 'Upperband' ] - self.df[ 'Dnperband' ])
-        self.df[ 'W20' ] = (self.df[ 'Upperband' ] - self.df[ 'Dnperband' ]) / self.df[ 'MA20' ]
+        self.df[ '%BB' ] = ( C - self.df[ 'Dnperband' ] ) / ( self.df[ 'Upperband' ] - self.df[ 'Dnperband' ] )
+        self.df[ 'W20' ] = ( self.df[ 'Upperband' ] - self.df[ 'Dnperband' ] ) / self.df[ 'MA20' ]
         # -------- Bollinger Bands Begin. --------
 
         # ---------------- 乖離 指標 Begin. ------------------------
@@ -173,6 +173,7 @@ class Technical_Indicator:
         # *************** KD 指標 End. ******************************
 
         self.df = self.df.iloc[ ::-1 ]
+
 
 def main( ):
     ti_A = Technical_Indicator( '2330', 'D', 10 )
