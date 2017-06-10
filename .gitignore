@@ -23,3 +23,4 @@
 /query_stock_price/__pycache__/query_stock_price_國票證券.cpython-34.pyc
 /query_stock_price/__pycache__/查詢股價_國票證券.cpython-34.pyc
 /籌碼分析.py.rej
+*.csv

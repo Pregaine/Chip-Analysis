@@ -1,14 +1,13 @@
 # coding: utf-8
 
-import matplotlib.pyplot as plt
 import shutil
 import requests
 import re
 import pandas as pd
 import csv
-import os
+import os, sys
 import time
-import urllib.parse
+import stock_inquire.stock_inquire as siq
 
 #-----------------------------------------------------------------------
 #傳入清單,回傳內容無重覆清單
@@ -16,6 +15,32 @@ import urllib.parse
 def remove_duplicates( l ):
     return list( set( l ) )
 #-----------------------------------------------------------------------
+
+def Det_Dict_OverCnt( in_dict, compare ):
+
+    for i in in_dict.values( ):
+
+        if i < compare:
+            return False
+
+    return True
+
+def Resort_List( path, lst ):
+
+    dirs = os.listdir( path )
+
+    for name in dirs:
+
+            i = re.search( '(\d{4,6}[A-Z]{0,3})', name )
+
+            if i.group(0) in lst:
+                lst.remove( i.group(0) )
+
+    return lst
+    
+
+ 
+OutputPath =  sys.argv[ 1 ]
 	
 #------------------------------------------------------------------------
 #網頁頭參數
@@ -66,10 +91,10 @@ print( 'http://bsr.twse.com.tw/bshtm/' + str.group() )
 #------------------------------------------------------------------------
 #讀取csv file,得到股號清單
 #------------------------------------------------------------------------
-filename = './/revenue_sii_201701'
-revenu_pd = pd.read_csv( filename + '.csv', encoding = 'utf8' )
-stock_code_list = revenu_pd['公司代號'].values.tolist()
-stock_code_list = remove_duplicates(stock_code_list)
+
+a = siq.stock_inquire( )
+
+stock_code_list = a.get_stock_list( )
 #------------------------------------------------------------------------
 
 
@@ -78,31 +103,35 @@ stock_code_list = remove_duplicates(stock_code_list)
 #------------------------------------------------------------------------
 num = 0
 headers = {'User-Agent': 'Mozilla/5.0'}
+timeout_dict = dict( )
+resort  = 0
 #------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------
 #根據股號清單,詢問網頁
 #------------------------------------------------------------------------
-for index in range( len( stock_code_list ) ):
+while len( stock_code_list ):
     
-	#詢問股號,網頁無回應或回應錯誤次數
+    #詢問股號,網頁無回應或回應錯誤次數
     miss_cnt = 0
-        
-    code_str = '{}'.format( stock_code_list[index] )    
-    
+
     date = None
-       
-    while( date == None and miss_cnt < 20 ):
-        
-        rs = requests.session()
+
+    num = stock_code_list.pop( 0 )
+
+    while date is None and miss_cnt < 2:
+
         miss_cnt = miss_cnt + 1
         
-        time.sleep(2)
-        res = rs.get( 'http://bsr.twse.com.tw/bshtm/bsMenu.aspx', stream = True, verify = False, headers = headers, timeout=None )
-        print( '股號', stock_code_list[index], 'Response', res.status_code, index )
+        time.sleep( 1 )
 
-		
+        rs = requests.session( )
+
+        res = rs.get( 'http://bsr.twse.com.tw/bshtm/bsMenu.aspx', stream = True, verify = False, headers = headers, timeout=None )
+
+        print( '股號', num, 'Response', res.status_code, len( stock_code_list ) )
+
 		#----------------------------------------------------------------------------------
 		#根據網頁響應內容"res.text"
 		#取出參數viewstate, eventvalidation
@@ -111,7 +140,7 @@ for index in range( len( stock_code_list ) ):
             viewstate = re.search( 'VIEWSTATE"\s+value=.*=', res.text )
             viewstate = viewstate.group()[18:]
             eventvalidation = re.search( 'EVENTVALIDATION"\s+value=.*\w', res.text )
-            eventvalidation = eventvalidation.group()[24:]
+            eventvalidation = eventvalidation.group( )[ 24: ]
         except:
             continue
         
@@ -120,10 +149,11 @@ for index in range( len( stock_code_list ) ):
 		#根據參數viewstate, eventvalidation
 		#得到個股卷商交易資料"date"
         #----------------------------------------------------------------------------------
-        str = re.search('CaptchaImage.*guid+\S*\w', res.text )
-        str.group()
-        res = rs.get( 'http://bsr.twse.com.tw/bshtm/' + str.group(), stream = True, verify = False ) 
-		#f = open('check.png', 'wb')
+        key = re.search('CaptchaImage.*guid+\S*\w', res.text )
+
+        res = rs.get( 'http://bsr.twse.com.tw/bshtm/' + key.group(), stream = True, verify = False )
+
+        #f = open('check.png', 'wb')
 		#shutil.copyfileobj( res.raw, f )
 		#f.close
         #----------------------------------------------------------------------------------
@@ -135,7 +165,7 @@ for index in range( len( stock_code_list ) ):
         '__VIEWSTATE' : viewstate,                      #encode_viewstate[:-1],
         '__EVENTVALIDATION' : eventvalidation,          #encode_eventvalidation[:-1],
         'RadioButton_Normal' : 'RadioButton_Normal',
-        'TextBox_Stkno' : code_str,
+        'TextBox_Stkno' : '{}'.format( num ),
         'CaptchaControl1 ' : 'Z67YA',
         'btnOK' : '%E6%9F%A5%E8%A9%A2',
         }
@@ -148,7 +178,28 @@ for index in range( len( stock_code_list ) ):
     #----------------------------------------------------------------------------------    
 	#查詢次數已達到20次,未成功切換下檔股號
 	#----------------------------------------------------------------------------------
-    if( miss_cnt == 20 ):
+    if miss_cnt == 2:
+
+        if num in timeout_dict:
+            timeout_dict[ num ] += 1
+        else:
+            timeout_dict[ num ] = 1
+
+        stock_code_list.append( num )
+
+        print( '查詢逾時', stock_code_list[ -1 ], '移入屁股' )
+
+        print( timeout_dict.items( ) )
+
+        if Det_Dict_OverCnt( timeout_dict, 5 ):
+            print( '不爽查了, 存入Log' )
+            del stock_code_list[ : ]
+            with open( 'log.csv', 'w' ) as csv_file:
+                writer = csv.writer( csv_file )
+                for key, value in timeout_dict.items( ):
+                    val = "{0}".format( value )
+                    writer.writerow( [ key, val ] )
+
         continue
 
 	#----------------------------------------------------------------------------------	
@@ -167,50 +218,59 @@ for index in range( len( stock_code_list ) ):
 	#----------------------------------------------------------------------------------
     tmp_csv = rs.get( 'http://bsr.twse.com.tw/bshtm/bsContent.aspx', verify = False ,stream = True ) 
     
-    while( tmp_csv.status_code > 300 or  tmp_csv.status_code < 200 ):
-        tmp_csv = rs.get( 'http://bsr.twse.com.tw/bshtm/bsContent.aspx', verify = False ,stream = True )   
-    
-    data = tmp_csv.text.split( '\n' )
-    rows = list()
+    if tmp_csv.status_code > 300 or tmp_csv.status_code < 200:
+        tmp_csv = rs.get( 'http://bsr.twse.com.tw/bshtm/bsContent.aspx', verify = False ,stream = True )
+
+    # ----------------------------------------------------------------------------------
+    # 斷開連結,斷開鎖鍊
+    # ----------------------------------------------------------------------------------
+    rs.close( )
+
+    data = tmp_csv.text.splitlines()
+
+    data[ -1 ] = data[ -1 ].replace( ',,', '' )
+    data = data[ 3: ]
+    rows = list( )
 
     for row in data:
         if ',,' in row:
             i = re.search( '.*,,', row )
-            rows.append( i.group()[:-2] )
+            rows.append( i.group( ).replace( ',,', ''  ) )
 
-            i = re.search( ',,.*\s', row )
-            rows.append( i.group()[2:-1] )
-        else:
-            rows.append( row )
-    
-	#----------------------------------------------------------------------------------
-	#斷開連結,斷開鎖鍊
-	#----------------------------------------------------------------------------------
-    rs.close()
+            i = re.search( ',,.*\s$', row )
+            rows.append( i.group().replace( ',,', ''  ) )
 
 	#-------------------------------------
 	#初始化資料夾名稱
 	#-------------------------------------
-    Savefiledir = '.\\'+ date + '籌碼\\' 
-    
+    Savefiledir = OutputPath + '全台卷商交易資料_' + date + '\\'
+
 	#-------------------------------------
 	#若無資料夾,建立資料夾
 	#-------------------------------------
     if not os.path.isdir(Savefiledir):
         os.makedirs(Savefiledir)
         
-	#-------------------------------------
+    #-------------------------------------
 	#列印即將寫入檔名
 	#-------------------------------------
-    print( Savefiledir + payload['TextBox_Stkno'] + name + '.csv' )
+    path_name = Savefiledir + payload['TextBox_Stkno'] + name + '_' + date + '.csv'
+    print( path_name )
+
+    # -----------------------------
+    # 檢查路徑內檔名比對code_list
+    # -----------------------------
+    if resort is 0:
+        resort = 1
+        stock_code_list = Resort_List( Savefiledir, stock_code_list )
 
 	#-------------------------------------
 	#根據清單"raw"檔案寫入csv
 	#-------------------------------------
-    with open( Savefiledir + payload['TextBox_Stkno'] + name + '.csv', 'w', newline='\n', encoding='utf-8' )as file:
+    with open( path_name, 'w', newline='\n', encoding='utf-8' )as file:
         w = csv.writer( file )
         w.writerow( [ '序號', '券商', '價格', '買進股數', '賣出股數' ] )
-        for data in rows[4:]:
+        for data in rows:
             s = data.split( ',' )
             w.writerow( s )
 
