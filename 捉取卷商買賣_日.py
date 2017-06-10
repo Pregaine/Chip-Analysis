@@ -33,8 +33,9 @@ def Resort_List( path, lst ):
 
             i = re.search( '(\d{4,6}[A-Z]{0,3})', name )
 
-            if i.group(0) in lst:
-                lst.remove( i.group(0) )
+            if i is not None:
+                if i.group(0) in lst:
+                    lst.remove( i.group(0) )
 
     return lst
     
@@ -269,7 +270,7 @@ while len( stock_code_list ):
 	#-------------------------------------
     with open( path_name, 'w', newline='\n', encoding='utf-8' )as file:
         w = csv.writer( file )
-        w.writerow( [ '序號', '券商', '價格', '買進股數', '賣出股數' ] )
+        # w.writerow( [ '序號', '券商', '價格', '買進股數', '賣出股數' ] )
         for data in rows:
             s = data.split( ',' )
             w.writerow( s )

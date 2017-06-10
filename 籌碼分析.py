@@ -23,8 +23,8 @@ df_freq_self = pd.Series( )
 # InputPath = "..\\籌碼資料\\"
 # input_chip_str = "2330台積電"
 # tar_str = "2330台積電籌碼整理"
-# start_date = "20170503"
-# end_date = "20170511"
+# start_date = "20170608"
+# end_date = "20170609"
 # cycle_chip = 1
 # CapitalStock = 3530000000
 
@@ -93,7 +93,7 @@ for input_file in File:
     # --------------------------------------------------------
     filename_str = input_file
     print( filename_str )
-    df = pd.read_csv( filename_str, sep = ',', encoding = 'cp950', false_values = 'NA',
+    df = pd.read_csv( filename_str, sep = ',', encoding = 'utf8', false_values = 'NA',
                       names = [ '序號', '券商', '價格', '買進股數', '賣出股數' ] )
     # --------------------------------------------------------
 
