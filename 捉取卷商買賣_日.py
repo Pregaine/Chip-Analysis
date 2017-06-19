@@ -97,7 +97,6 @@ print( 'http://bsr.twse.com.tw/bshtm/' + str.group() )
 a = siq.stock_inquire( )
 
 stock_code_list = a.get_stock_list( )
-# stock_code_list = [ 4148, 6582 ]
 #------------------------------------------------------------------------
 
 
