@@ -42,7 +42,8 @@ def Resort_List( path, lst ):
 
  
 OutputPath =  sys.argv[ 1 ]
-	
+Load_Sucess_List = [ ]
+# OutputPath = ".\\"
 #------------------------------------------------------------------------
 #網頁頭參數
 #詢問得到以下參數
@@ -96,6 +97,7 @@ print( 'http://bsr.twse.com.tw/bshtm/' + str.group() )
 a = siq.stock_inquire( )
 
 stock_code_list = a.get_stock_list( )
+# stock_code_list = [ 4148, 6582 ]
 #------------------------------------------------------------------------
 
 
@@ -154,6 +156,7 @@ while len( stock_code_list ):
 
         res = rs.get( 'http://bsr.twse.com.tw/bshtm/' + key.group(), stream = True, verify = False )
 
+
         #f = open('check.png', 'wb')
 		#shutil.copyfileobj( res.raw, f )
 		#f.close
@@ -174,6 +177,7 @@ while len( stock_code_list ):
         rs.post( "http://bsr.twse.com.tw/bshtm/bsMenu.aspx", data=payload, headers=headers, verify = False, stream = True )
         res = rs.get( 'http://bsr.twse.com.tw/bshtm/bsContent.aspx?v=t',verify = False ,stream = True, )
         date = re.search( 'receive_date.*\s.*\d', res.text )
+
         #print( '股號', stock_code_list[index], 'Response', res.status_code, '內容' )
         
     #----------------------------------------------------------------------------------    
@@ -203,6 +207,8 @@ while len( stock_code_list ):
 
         continue
 
+    if num in timeout_dict.keys( ):
+        timeout_dict.pop( num )
 	#----------------------------------------------------------------------------------	
 	#前面手續為模擬詢問卷商資料過程
 	#成功,代表此Sesion可以得到正確響應內容
@@ -217,10 +223,11 @@ while len( stock_code_list ):
 	#詢問網址"http://bsr.twse.com.tw/bshtm/bsContent.aspx"
 	#得到正確卷商交易資料,存到清單"raw"
 	#----------------------------------------------------------------------------------
-    tmp_csv = rs.get( 'http://bsr.twse.com.tw/bshtm/bsContent.aspx', verify = False ,stream = True ) 
-    
+    tmp_csv = rs.get( 'http://bsr.twse.com.tw/bshtm/bsContent.aspx', verify = False ,stream = True )
+
     if tmp_csv.status_code > 300 or tmp_csv.status_code < 200:
         tmp_csv = rs.get( 'http://bsr.twse.com.tw/bshtm/bsContent.aspx', verify = False ,stream = True )
+
 
     # ----------------------------------------------------------------------------------
     # 斷開連結,斷開鎖鍊
