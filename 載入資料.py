@@ -5,13 +5,13 @@ import re
 import csv
 import sys
 
-# InputPath  = "D:\\03-workspace\\02-卷商分點\\搜集籌碼資料\\**\\"
-# OutputPath = 'D:\\03-workspace\\02-卷商分點\\搜集籌碼資料\\'
+InputPath  = "D:\\03-workspace\\02-卷商分點\\搜集籌碼資料\\**\\"
+OutputPath = 'D:\\03-workspace\\02-卷商分點\\搜集籌碼資料\\'
 
 InputFilePathList = [ ]
 
-InputPath        =  sys.argv[ 1 ]
-OutputPath       =  sys.argv[ 2 ]
+# InputPath        =  sys.argv[ 1 ]
+# OutputPath       =  sys.argv[ 2 ]
 
 for input_file in glob.glob( os.path.join( InputPath, '*.csv') ):
 
@@ -62,7 +62,7 @@ for filepath in InputFilePathList:
     output_file = directory + '\\' + filename_str + '_' + YearPath.group( 0 ) + '.csv'
 
     with open( filepath, 'r', newline = '', encoding = 'utf8' ) as csv_in_file:
-        with open( output_file, 'w', newline = '' ) as csv_out_file:
+        with open( output_file, 'w', newline = '', encoding = 'utf8' ) as csv_out_file:
             filereader = csv.DictReader( csv_in_file, delimiter = ',' )
             filewriter = csv.writer( csv_out_file, delimiter = ',' )
 

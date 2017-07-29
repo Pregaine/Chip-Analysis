@@ -25,3 +25,13 @@
 /籌碼分析.py.rej
 *.csv
 /stock_inquire/__pycache__/*.pyc
+*.csv
+*.txt
+*.rar
+*.xlsx
+*.csv
+*.sqlite
+*.sql
+*.pyc
+*.sqbpro
+*.ini

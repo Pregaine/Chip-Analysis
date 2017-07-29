@@ -9,6 +9,22 @@ import os, sys
 import time
 import stock_inquire.stock_inquire as siq
 
+
+def WriteCsv( filename, lst ):
+
+    with open( filename, 'w', newline='\n', encoding = 'utf8' ) as csv_out_file:
+
+        filewriter = csv.writer( csv_out_file, delimiter = ',' )
+
+        for in_val in lst:
+            filewriter.writerow( in_val )
+
+def ReadCsv( filename ):
+
+    with open( filename, 'r', newline = '\n', encoding = 'utf8' ) as csv_file:
+        lst = csv.reader( csv_file )
+
+    return lst
 #-----------------------------------------------------------------------
 #傳入清單,回傳內容無重覆清單
 #-----------------------------------------------------------------------
@@ -41,9 +57,9 @@ def Resort_List( path, lst ):
     
 
  
-OutputPath =  sys.argv[ 1 ]
+# OutputPath =  sys.argv[ 1 ]
 Load_Sucess_List = [ ]
-# OutputPath = ".\\"
+OutputPath = ".\\"
 #------------------------------------------------------------------------
 #網頁頭參數
 #詢問得到以下參數
@@ -233,9 +249,10 @@ while len( stock_code_list ):
     # ----------------------------------------------------------------------------------
     rs.close( )
 
-    data = tmp_csv.text.splitlines()
+    data = tmp_csv.text.splitlines( )
 
-    data[ -1 ] = data[ -1 ].replace( ',,', '' )
+    data[ -1 ] = data[ -1 ].replace( ',,', ',' )
+    data[ -1 ] = data[ -1 ].replace( ' ', '' )
     data = data[ 3: ]
     rows = list( )
 
@@ -244,8 +261,21 @@ while len( stock_code_list ):
             i = re.search( '.*,,', row )
             rows.append( i.group( ).replace( ',,', ''  ) )
 
-            i = re.search( ',,.*\s$', row )
-            rows.append( i.group().replace( ',,', ''  ) )
+            try:
+                i = re.search( ',,.*\s$', row )
+                rows.append( i.group( ).replace( ',,', '' ) )
+            except AttributeError:
+                continue
+        else:
+            print( row )
+
+            tmp = row.split( ',' )
+
+            if len( tmp ) > 5:
+                rows.append( ','.join( tmp[ 0:5 ] ) )
+                rows.append( ','.join( tmp[ 5: ] ) )
+            else:
+                rows.append( ','.join( tmp ) )
 
 	#-------------------------------------
 	#初始化資料夾名稱
@@ -274,7 +304,7 @@ while len( stock_code_list ):
 	#-------------------------------------
 	#根據清單"raw"檔案寫入csv
 	#-------------------------------------
-    with open( path_name, 'w', newline='\n', encoding='utf-8' )as file:
+    with open( path_name, 'w', newline='\n', encoding='utf-8' ) as file:
         w = csv.writer( file )
         # w.writerow( [ '序號', '券商', '價格', '買進股數', '賣出股數' ] )
         for data in rows:

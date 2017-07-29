@@ -20,21 +20,21 @@ df_compare = pd.DataFrame( )
 df_freq_buy = pd.Series( )
 df_freq_self = pd.Series( )
 
-# InputPath = "..\\籌碼資料\\"
-# input_chip_str = "2330台積電"
-# tar_str = "2330台積電籌碼整理"
-# start_date = "20170608"
-# end_date = "20170609"
-# cycle_chip = 1
-# CapitalStock = 3530000000
+InputPath = ".\\"
+input_chip_str = "2330台積電"
+tar_str = "2330台積電籌碼整理"
+start_date = "20170601"
+end_date = "20170609"
+cycle_chip = 1
+CapitalStock = 3530000000
 
-InputPath = sys.argv[ 1 ]
-input_chip_str = sys.argv[ 2 ]
-tar_str = sys.argv[ 3 ]
-start_date = sys.argv[ 4 ]
-end_date = sys.argv[ 5 ]
-cycle_chip = sys.argv[ 6 ]
-CapitalStock = sys.argv[ 7 ]
+# InputPath = sys.argv[ 1 ]
+# input_chip_str = sys.argv[ 2 ]
+# tar_str = sys.argv[ 3 ]
+# start_date = sys.argv[ 4 ]
+# end_date = sys.argv[ 5 ]
+# cycle_chip = sys.argv[ 6 ]
+# CapitalStock = sys.argv[ 7 ]
 
 cycle_chip = int( cycle_chip )
 CapitalStock = int( CapitalStock )
@@ -70,8 +70,10 @@ def Cal_ChipDateList( Path, chip_str, start_date_str, end_date_str ):
     while theday_obj <= endday_obj:
 
         FilePath = Path + '全台卷商交易資料' + theday_str + '\\' + chip_str + theday_str + '.csv'
+        print( FilePath )
 
         if os.path.exists( FilePath ):
+            print( "yes" )
             file_list.append( FilePath )
             time_obj_list.append( theday_obj )
 
@@ -99,6 +101,8 @@ for input_file in File:
 
     df[ '日期' ] = YearPath.group( 0 )
     df_sort = pd.concat( [ df_sort, df ] )
+
+print( df_sort )
 
 df_sort = df_sort[ df_sort[ '券商' ].notnull( ) ]
 

@@ -4,12 +4,10 @@ import os
 import numpy as np
 import csv
 
-
 # sqlite3.register_adapter(np.float64, float)
 # sqlite3.register_adapter(np.float32, float)
 # sqlite3.register_adapter(np.int64, int)
 # sqlite3.register_adapter(np.int32, int)
-
 
 def resetTable( cur ):
     # Do some setup
@@ -32,7 +30,7 @@ def resetTable( cur ):
     CREATE TABLE Brokerages (
         id     INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
         symbol TEXT UNIQUE,
-		name TEXT UNIQUE
+		name   TEXT UNIQUE
     );    
 
     CREATE TABLE Stocks (
@@ -82,14 +80,21 @@ class dbHandle( ):
                 continue
 
             date = d.split( '_' )[ 1 ]
+
             if date.isdigit( ):
+
                 print( 'Processing Date... ' + str( date ) )
+
                 filenames = os.listdir( './' + d )
+
                 for fname in filenames:
-                    self.insert_csv2DB( './' + d + '/' + fname )
+                    if fname.endswith( ".csv" ):
+                        self.insert_csv2DB( './' + d + '/' + fname )
+
                 self.con_db.commit( )
 
     def insert_csv2DB( self, filename ):
+
         fs = filename.split( '_' )
 
         # try:
@@ -100,9 +105,11 @@ class dbHandle( ):
         brokerage_position = 'NA'
 
         f = open( filename, 'r', encoding = 'utf8', errors = 'ignore' )
+
         for row in csv.reader( f ):
             if row[ 0 ] == '':
                 return True
+
             brokerage_symbol = row[ 1 ][ 0:4 ]
             brokerage_name = row[ 1 ][ 4:len( row[ 1 ] ) ].replace( ' ', '' ).replace( '\u3000', '' )
             price = row[ 2 ]
@@ -119,6 +126,7 @@ class dbHandle( ):
                                      (brokerage_symbol, brokerage_name) )
                 self.cur_db.execute( 'SELECT id FROM Brokerages WHERE symbol = ? AND name = ? LIMIT 1', \
                                      (brokerage_symbol, brokerage_name) )
+                
                 brokerage_id = self.cur_db.fetchone( )[ 0 ]
             else:
                 brokerage_id = ft[ 0 ]
