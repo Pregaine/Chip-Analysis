@@ -232,8 +232,7 @@ while len( stock_code_list ):
     name = re.search( '&nbsp;.*<', res.text )
     name = name.group()[6:-1]
     #----------------------------------------------------------------------------------
-    
-	
+
 	#----------------------------------------------------------------------------------
 	#詢問網址"http://bsr.twse.com.tw/bshtm/bsContent.aspx"
 	#得到正確卷商交易資料,存到清單"raw"
@@ -243,13 +242,19 @@ while len( stock_code_list ):
     if tmp_csv.status_code > 300 or tmp_csv.status_code < 200:
         tmp_csv = rs.get( 'http://bsr.twse.com.tw/bshtm/bsContent.aspx', verify = False ,stream = True )
 
-
     # ----------------------------------------------------------------------------------
     # 斷開連結,斷開鎖鍊
     # ----------------------------------------------------------------------------------
     rs.close( )
 
     data = tmp_csv.text.splitlines( )
+
+    print( data )
+
+    if data[ 0 ] != '券商買賣股票成交價量資訊':
+        stock_code_list.append( num )
+        print( '查詢資料錯誤', stock_code_list[ -1 ], '移入屁股' )
+        continue
 
     data[ -1 ] = data[ -1 ].replace( ',,', ',' )
     data[ -1 ] = data[ -1 ].replace( ' ', '' )

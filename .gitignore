@@ -35,3 +35,5 @@
 *.pyc
 *.sqbpro
 *.ini
+*.xls
+*.csv

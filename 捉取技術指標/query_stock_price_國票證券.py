@@ -4,6 +4,7 @@ import pandas as pd
 import talib
 import pyodbc
 import logging
+from datetime import datetime
 
 class dbHandle( ):
 
@@ -321,6 +322,8 @@ class Technical_Indicator:
 
 def main( ):
 
+    start = datetime.now( )
+
     server   = 'localhost'
     database = 'StockDB'
     username = 'sa'
@@ -428,6 +431,7 @@ def main( ):
             logging.exception( e )
             print( stock, '60分線無資料' )
 
+    print( datetime.now( ) - start )
     # ------------------------------------------------------
 
 if __name__ == '__main__':
